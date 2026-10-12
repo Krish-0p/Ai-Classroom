@@ -1,0 +1,19 @@
+<section class="slide slide-comparison">
+  <h2>{{ heading }}</h2>
+  <div class="columns">
+    <div class="column">
+      <h3>{{ left_label }}</h3>
+      <ul>
+        {% for point in left_points %}<li>{{ point }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="column">
+      <h3>{{ right_label }}</h3>
+      <ul>
+        {% for point in right_points %}<li>{{ point }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
