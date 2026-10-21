@@ -10,7 +10,7 @@ export const aiMessages = {
   timeout:
     "The AI provider timed out. Try fewer source documents or retry later.",
   credentials:
-    "The AI provider rejected access. Check the server API key and its permissions.",
+    "The AI provider rejected access. Check your Groq key in AI settings and its permissions.",
   model:
     "The configured AI model or endpoint is unavailable. Check the provider model settings.",
   quota:

@@ -9,17 +9,17 @@ import {
   type GenerateSlidesInput,
 } from "@/features/slides/schema";
 import {
-  configuredProviders,
   routeStructured,
   type GenerationMetadata,
 } from "@/ai/router/structured";
 import { slidesPrompt, SLIDES_PROMPT_VERSION } from "@/ai/prompts/slides";
 import { ProviderError, StructuredOutputError } from "@/ai/providers/provider";
 import { approvedSlideCurriculum } from "./slides";
-import { lockOwnedClassroom } from "./curriculum-access";
+import { lockOwnedClassroom, ownedClassroom } from "./curriculum-access";
 import { AppError } from "./errors";
 import { slideMessages as m } from "@/lib/slide-messages";
 import { curriculumMessages as cm } from "@/lib/curriculum-messages";
+import { teacherTextProviders } from "./teacher-ai-settings";
 
 const hash = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -31,7 +31,8 @@ export async function startSlideJob(
   classroomId: string,
   input: GenerateSlidesInput,
 ) {
-  const providers = configuredProviders("fast");
+  await ownedClassroom(actor, classroomId);
+  const providers = await teacherTextProviders(actor.id, "fast");
   if (!providers.length) throw new AppError(503, m.unavailable);
   return getDatabase().$transaction(async (db) => {
     await lockOwnedClassroom(db, actor, classroomId);
@@ -146,7 +147,7 @@ export async function runSlideJob(id: string) {
         count: input.count,
         instruction: input.instruction,
       }),
-      configuredProviders("fast"),
+      await teacherTextProviders(job.createdBy, "fast"),
       (entry) => {
         attempts.push(entry);
         console.info("AI generation", { task: job.task, jobId: id, ...entry });

@@ -34,6 +34,15 @@ model User {
   masteryRecords MasteryRecord[]
   tutorConversations TutorConversation[]
   learningEvents LearningEvent[]
+  aiSettings    TeacherAISettings?
+}
+
+model TeacherAISettings {
+  teacherId        String   @id
+  teacher          User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  encryptedGroqKey String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Session {

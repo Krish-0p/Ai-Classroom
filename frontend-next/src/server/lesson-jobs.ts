@@ -7,7 +7,6 @@ import { lessonDocument, writeLessonBlocks } from "@/server/lessons";
 import { lessonSchema, generatedLessonSchema } from "@/features/lessons/schema";
 import { mergeLockedBlocks } from "@/features/lessons/merge-blocks";
 import {
-  configuredProviders,
   routeStructured,
   type GenerationMetadata,
 } from "@/ai/router/structured";
@@ -15,6 +14,8 @@ import { lessonPrompt, LESSON_PROMPT_VERSION } from "@/ai/prompts/lesson";
 import { AppError } from "@/server/errors";
 import { curriculumMessages as cm } from "@/lib/curriculum-messages";
 import { lessonMessages as m } from "@/lib/lesson-messages";
+import { teacherTextProviders } from "./teacher-ai-settings";
+import { ProviderError } from "@/ai/providers/provider";
 
 export async function startLessonJob(
   actor: Actor,
@@ -24,7 +25,7 @@ export async function startLessonJob(
   instruction: string,
 ) {
   const classroom = await ownedClassroom(actor, classroomId);
-  const providers = configuredProviders();
+  const providers = await teacherTextProviders(actor.id);
   if (!providers.length) throw new AppError(503, m.aiUnavailable);
   return getDatabase().$transaction(async (transaction) => {
     await lockOwnedClassroom(transaction, actor, classroomId);
@@ -181,7 +182,7 @@ export async function runLessonJob(id: string) {
           sources,
           instruction,
         }),
-        undefined,
+        await teacherTextProviders(job.createdBy),
         (entry) => {
           records.push(entry);
           console.info("AI generation", {
@@ -244,7 +245,10 @@ export async function runLessonJob(id: string) {
         where: { id, status: { in: ["queued", "generating"] } },
         data: {
           status: "failed",
-          error: error instanceof AppError ? error.message : m.failed,
+          error:
+            error instanceof AppError || error instanceof ProviderError
+              ? error.message
+              : m.failed,
           metadata: { attempts: records },
         },
       })

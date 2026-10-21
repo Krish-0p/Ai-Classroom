@@ -14,7 +14,6 @@ import {
   type GenerationOptions,
 } from "@/features/assessments/schema";
 import {
-  configuredProviders,
   routeStructured,
   type GenerationMetadata,
 } from "@/ai/router/structured";
@@ -26,6 +25,7 @@ import { ProviderError, StructuredOutputError } from "@/ai/providers/provider";
 import { AppError } from "@/server/errors";
 import { assessmentMessages as m } from "@/lib/assessment-messages";
 import { curriculumMessages as cm } from "@/lib/curriculum-messages";
+import { teacherTextProviders } from "./teacher-ai-settings";
 export async function startAssessmentJob(
   actor: Actor,
   classroomId: string,
@@ -34,7 +34,7 @@ export async function startAssessmentJob(
   options: GenerationOptions,
 ) {
   const classroom = await ownedClassroom(actor, classroomId);
-  const providers = configuredProviders("fast");
+  const providers = await teacherTextProviders(actor.id, "fast");
   if (!providers.length) throw new AppError(503, m.aiUnavailable);
   return getDatabase().$transaction(async (db) => {
     await lockOwnedClassroom(db, actor, classroomId);
@@ -186,7 +186,7 @@ export async function runAssessmentJob(id: string) {
         sources,
         options,
       }),
-      configuredProviders("fast"),
+      await teacherTextProviders(job.createdBy, "fast"),
       (entry) => {
         attempts.push(entry);
         console.info("AI generation", { task: job.task, jobId: id, ...entry });

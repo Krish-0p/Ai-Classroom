@@ -11,6 +11,7 @@ import {
   Settings2,
   Users,
   ArrowLeft,
+  KeyRound,
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -26,6 +27,7 @@ import { assessmentMessages } from "@/lib/assessment-messages";
 import { slideMessages } from "@/lib/slide-messages";
 import { analyticsMessages } from "@/lib/analytics-messages";
 import { workspaceMessages as w } from "@/lib/workspace-messages";
+import { teacherAiMessages } from "@/lib/teacher-ai-messages";
 
 export function CourseNavigation({
   classrooms,
@@ -102,6 +104,22 @@ export function CourseNavigation({
         <ArrowLeft data-icon="inline-start" />
         {w.allClassrooms}
       </Link>
+      {teacher && (
+        <Link
+          href="/dashboard/settings/ai"
+          aria-current={
+            pathname === "/dashboard/settings/ai" ? "page" : undefined
+          }
+          className={buttonVariants({
+            variant:
+              pathname === "/dashboard/settings/ai" ? "default" : "outline",
+            className: "course-nav-link",
+          })}
+        >
+          <KeyRound data-icon="inline-start" />
+          {teacherAiMessages.title}
+        </Link>
+      )}
       {classroom ? (
         <Field className="course-switcher">
           <FieldLabel htmlFor={`${role}-classroom`}>

@@ -30,11 +30,8 @@ DATABASE_URL=<Neon pooled connection URL>
 DIRECT_URL=<Neon direct connection URL>
 BETTER_AUTH_URL=https://<your-production-domain>
 BETTER_AUTH_SECRET=<new random secret of at least 32 characters>
+AI_CREDENTIAL_ENCRYPTION_KEY=<separate random 64-character hexadecimal secret>
 SOURCE_STORAGE_PROVIDER=database
-GROQ_API_KEY=<your Groq key>
-AI_PRIMARY_PROVIDER=groq
-AI_FAST_PROVIDER=groq
-AI_PROVIDER_FALLBACK_ENABLED=false
 GROQ_REASONING_MODEL=openai/gpt-oss-20b
 GROQ_FAST_MODEL=openai/gpt-oss-20b
 ```
@@ -45,9 +42,13 @@ Generate a fresh production authentication secret locally:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
+Run that command a second time to generate a **different** secret for `AI_CREDENTIAL_ENCRYPTION_KEY`. This is an application encryption secret, not a Groq API key. Keep it private and stable. Losing or replacing it means teachers must re-enter their saved keys. It must be exactly 64 hexadecimal characters; do not prefix it with `NEXT_PUBLIC_`.
+
+Each teacher signs in, opens **AI settings**, and pastes their own Groq API key. It is encrypted in the database and is never returned by the settings API. Curriculum, lesson, assessment, and slide generation use only the requesting teacher's saved key, including in background jobs. There is no fallback to `GROQ_API_KEY` or Gemini. You do not need to put a shared Groq key in Vercel. Saving a key performs syntax validation only; it does not contact Groq or confirm quota.
+
 `BETTER_AUTH_URL` must be the final production browser origin, including `https://`, not localhost or a Git commit's temporary deployment URL. Use the production domain shown for your Vercel project. If the first deploy gets a different domain than expected, update this variable and redeploy before registering.
 
-The root prototype `.env` and local `frontend-next/.env.local` are ignored by Git; Vercel does not receive their secrets. No Gemini, OpenAI or Anthropic key is required for Groq-only text generation. Groq reasoning effort, structured output mode and completion limit have code defaults (`low`, `json_schema`, `4096`).
+The root prototype `.env` and local `frontend-next/.env.local` are ignored by Git; Vercel does not receive their secrets. No Gemini, OpenAI or Anthropic key is required. Global provider-selection and API-key environment settings are retained for legacy adapters but do not control active teacher generation. Groq reasoning effort, structured output mode and completion limit have code defaults (`low`, `json_schema`, `4096`). Teacher credentials are sent only to the official Groq endpoint, not an overridden provider base URL.
 
 Password-reset emails are optional for initial deployment. To enable them, also configure `RESEND_API_KEY` and `RESEND_FROM_EMAIL` with a verified sender. Registration and login do not require Resend.
 
@@ -67,7 +68,7 @@ Do not share production database credentials with Preview deployments. The deplo
 
 ## 5. Open and manually verify
 
-Open the production domain, register a teacher, create a classroom, paste a syllabus or upload a small file, approve the curriculum, generate/review/publish slides, and verify student access in another browser profile. Generating AI content consumes your provider allowance; other verification can be done with manual authoring.
+Open the production domain, register a teacher, open **AI settings**, save the teacher's Groq key, create a classroom, paste a syllabus or upload a small file, approve the curriculum, generate/review/publish slides, and verify student access in another browser profile. Generating AI content consumes that teacher's provider allowance; other verification can be done with manual authoring. Students do not need an API key.
 
 Local users, classrooms and disk files are not automatically copied to Neon. This deployment starts with a new database unless you separately migrate existing data. Existing local files must be migrated as well if you later copy local database rows that reference them.
 

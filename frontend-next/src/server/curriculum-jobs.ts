@@ -5,7 +5,6 @@ import type { Actor } from "@/features/auth/schema";
 import { getDatabase } from "@/db/client";
 import { ownedClassroom, lockOwnedClassroom } from "@/server/curriculum-access";
 import {
-  configuredProviders,
   routeCurriculum,
   type GenerationMetadata,
 } from "@/ai/router/curriculum";
@@ -15,6 +14,7 @@ import {
 } from "@/ai/prompts/curriculum";
 import { AppError } from "@/server/errors";
 import { curriculumMessages as m } from "@/lib/curriculum-messages";
+import { teacherTextProviders } from "./teacher-ai-settings";
 const JOB_TIMEOUT = 180_000;
 export async function startCurriculumJob(
   actor: Actor,
@@ -22,7 +22,7 @@ export async function startCurriculumJob(
   sourceIds: string[],
 ) {
   const classroom = await ownedClassroom(actor, classroomId);
-  const providers = configuredProviders();
+  const providers = await teacherTextProviders(actor.id);
   if (!providers.length) throw new AppError(503, m.aiUnavailable);
   return getDatabase().$transaction(async (transaction) => {
     await lockOwnedClassroom(transaction, actor, classroomId);
@@ -136,7 +136,7 @@ export async function runCurriculumJob(id: string) {
         },
         sources,
       ),
-      undefined,
+      await teacherTextProviders(job.createdBy),
       (entry) => {
         metadata.push(entry);
         console.info("AI generation", {

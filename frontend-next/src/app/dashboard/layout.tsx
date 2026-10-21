@@ -1,6 +1,8 @@
 import { requirePageActor } from "@/server/session";
 import { listClassrooms } from "@/server/classrooms";
 import { CourseNavigation } from "@/features/classrooms/course-navigation";
+import { readTeacherAiStatus } from "@/server/teacher-ai-settings";
+import { TeacherAiSetupNotice } from "@/features/ai-settings/setup-notice";
 
 export default async function DashboardLayout({
   children,
@@ -9,6 +11,8 @@ export default async function DashboardLayout({
 }) {
   const actor = await requirePageActor();
   const classrooms = await listClassrooms(actor);
+  const aiStatus =
+    actor.role === "teacher" ? await readTeacherAiStatus(actor) : null;
   const navigationClassrooms = classrooms.map(({ id, name }) => ({ id, name }));
   return (
     <div className="workspace-shell">
@@ -18,7 +22,10 @@ export default async function DashboardLayout({
           role={actor.role}
           name={actor.name}
         />
-        <div className="workspace-content">{children}</div>
+        <div className="workspace-content">
+          {aiStatus && <TeacherAiSetupNotice status={aiStatus} />}
+          {children}
+        </div>
       </div>
     </div>
   );

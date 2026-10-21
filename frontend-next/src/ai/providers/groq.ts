@@ -25,6 +25,7 @@ export class GroqProvider implements AIProvider {
   constructor(
     private key: string,
     readonly model: string,
+    private readonly officialEndpointOnly = false,
   ) {}
   async generateText(input: GenerateTextInput) {
     const settings = z
@@ -41,7 +42,7 @@ export class GroqProvider implements AIProvider {
     if (!settings.success) throw new ProviderError(false, "configuration");
     const { maxTokens, reasoningEffort, outputMode } = settings.data;
     const raw = await providerRequest(
-      `${providerBaseURL("groq")}/chat/completions`,
+      `${providerBaseURL("groq", this.officialEndpointOnly)}/chat/completions`,
       { Authorization: `Bearer ${this.key}` },
       {
         model: this.model,

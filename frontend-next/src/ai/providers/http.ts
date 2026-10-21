@@ -36,6 +36,7 @@ export async function providerRequest(
   try {
     const response = await fetch(url, {
       method: "POST",
+      cache: "no-store",
       headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(20_000),

@@ -4,7 +4,7 @@ Deploy to Vercel with Neon using the [step-by-step deployment guide](docs/deploy
 
 Milestones A–F plus curriculum slides. A modular Next.js/TypeScript monolith with PostgreSQL, Prisma, Better Auth, classrooms, private document ingestion, AI curriculum/lesson/question drafts, teacher approval, knowledge graphs, lesson and assessment players, teacher review, concept mastery, 4–5 editable curriculum slides and teacher analytics. Classroom Tutor has been retired. See [`../AGENTS.md`](../AGENTS.md), [Foundation decisions](docs/foundation.md), [Curriculum architecture](docs/curriculum.md), [Lesson workflow](docs/lessons.md), [Assessment and mastery workflow](docs/assessments.md) and [Curriculum slides](docs/slides.md).
 
-The requested production build includes TypeScript checking. Migrations through curriculum slides are applied to this workspace's local database. Functional verification remains with the user; no automated tests, browser checks or live AI checks were run for the slides feature. Other installations need pgvector for the preserved historical schema and must apply migrations using `npm run db:deploy`.
+The requested production build includes TypeScript checking. Migrations through teacher-owned API-key settings are applied to this workspace's local database. Functional verification remains with the user; no automated tests, browser checks or live AI checks were run for this feature. Other installations need pgvector for the preserved historical schema and must apply migrations using `npm run db:deploy`.
 
 ## Local setup
 
@@ -17,9 +17,9 @@ Copy-Item .env.example .env.local
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Paste the generated value into `BETTER_AUTH_SECRET` in `.env.local`. Never commit this file. Keep `BETTER_AUTH_URL` equal to the browser origin, including its port. All configuration is server-only. Configure Gemini and/or Groq keys and model IDs for AI extraction; manual curriculum editing works without them.
+Paste the generated value into `BETTER_AUTH_SECRET` in `.env.local`. Run the command again and put the new, separate value into `AI_CREDENTIAL_ENCRYPTION_KEY`; keep that 64-character encryption secret stable. Never commit this file. Keep `BETTER_AUTH_URL` equal to the browser origin, including its port. All configuration is server-only. After signing in, each teacher opens **AI settings** and saves their own Groq key. It is encrypted in the database, never shown again, and used across that teacher's classrooms. There is no shared server-key fallback. Manual editing and student access work without API keys. See [Teacher API keys](docs/teacher-api-keys.md).
 
-For Groq-only text generation, set `AI_PRIMARY_PROVIDER=groq`, `AI_FAST_PROVIDER=groq`, `AI_PROVIDER_FALLBACK_ENABLED=false`, and both Groq text model settings to `openai/gpt-oss-20b` in `frontend-next/.env.local`. The root Python prototype's `.env` is not loaded by this app. Restart the app after changing configuration. Groq uses strict structured output and a configurable 4,096-token completion limit by default. See [AI configuration](docs/curriculum.md#configuration) for output modes, reasoning effort and rate-limit handling. Curriculum slides use this same text provider; no Gemini key, embeddings or PPTX library is needed.
+Set `GROQ_REASONING_MODEL` and `GROQ_FAST_MODEL` in `frontend-next/.env.local` to choose models; both use a centralized `openai/gpt-oss-20b` default when omitted. The root Python prototype's `.env` is not loaded by this app. Restart the app after changing server configuration. Groq uses strict structured output and a configurable 4,096-token completion limit by default. See [AI configuration](docs/curriculum.md#configuration) for output modes, reasoning effort and rate-limit handling. Curriculum slides use the teacher's Groq key too; no Gemini key, embeddings or PPTX library is needed. Saving a teacher key does not contact Groq or verify allowance.
 
 Password recovery uses Better Auth reset tokens and the Resend email API. Set `RESEND_API_KEY` and a verified sender address in `RESEND_FROM_EMAIL` to deliver reset links; recovery links expire after 30 minutes and password changes revoke existing sessions. The reset request response does not reveal whether an email is registered.
 
@@ -34,7 +34,7 @@ Open <http://localhost:3000>. Use `DATABASE_URL` to connect to an existing Postg
 
 ## Demo
 
-1. Register a teacher account.
+1. Register a teacher account. Open **AI settings** and save your Groq key before requesting AI generation; manual workflows do not require it.
 2. Create `Data Structures & Algorithms`, academic level `Undergraduate`, language `English`, duration `12` weeks.
 3. Copy its join code from the classroom detail page.
 4. In another browser/profile, register a student account and join using the code.
