@@ -60,6 +60,12 @@ export const curriculumMessages = {
     "Source exceeds the size or text limit. Split it into smaller documents.",
   noText:
     "No readable text found. Convert scanned documents with OCR before uploading.",
+  pdfPassword:
+    "This PDF requires a password. Upload an unlocked copy or paste its text.",
+  pdfInvalid:
+    "The PDF reader could not read this document. Try exporting a new PDF or paste its text.",
+  pdfUnavailable:
+    "PDF processing is temporarily unavailable on the server. Paste the document text for now and ask the administrator to check the deployment logs.",
   aiUnavailable:
     "AI extraction is unavailable. Check provider configuration or create the draft manually.",
   aiFailed:

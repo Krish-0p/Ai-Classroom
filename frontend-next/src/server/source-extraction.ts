@@ -4,6 +4,7 @@ import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { AppError } from "@/server/errors";
 import { curriculumMessages as m } from "@/lib/curriculum-messages";
 import { MAX_SOURCE_BYTES } from "@/lib/source-limits";
+import { extractPDFSections } from "@/server/pdf-extraction";
 
 export { MAX_SOURCE_BYTES } from "@/lib/source-limits";
 export const MAX_SOURCE_TEXT = 120_000;
@@ -150,22 +151,7 @@ export async function extractSource(
       return result("text/plain", [{ label: "Text", text }]);
     }
     if (extension === "pdf" && data.subarray(0, 5).toString() === "%PDF-") {
-      const { PDFParse } = await import("pdf-parse");
-      const parser = new PDFParse({ data, isEvalSupported: false });
-      try {
-        const info = await parser.getInfo();
-        if (info.total > 100) throw new AppError(413, m.tooLarge);
-        const output = await parser.getText();
-        return result(
-          "application/pdf",
-          output.pages.map((page) => ({
-            label: `Page ${page.num}`,
-            text: page.text,
-          })),
-        );
-      } finally {
-        await parser.destroy();
-      }
+      return result("application/pdf", await extractPDFSections(data));
     }
     if (
       (extension === "docx" || extension === "pptx") &&

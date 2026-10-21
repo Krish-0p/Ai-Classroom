@@ -78,6 +78,10 @@ Vercel has no persistent local application disk. On Vercel, uploads use the `Dat
 
 The shared upload limit is 4 MiB, leaving space under Vercel's 4.5 MB function request/response cap. Files remain subject to existing type, text and extraction limits. Large documents must be split or pasted as text. Storing files in Postgres is a simple small-classroom/demo option and counts toward database storage; the `SourceStorage` interface remains available for an S3-compatible adapter when larger workloads require it.
 
+PDF extraction initializes `pdf-parse/worker` before the parser, supplies its Node canvas factory, and explicitly configures the matching embedded worker. The upload route's `outputFileTracingIncludes` keeps the worker, PDF.js assets and installed native canvas packages in the deployed function. Keep these includes when changing deployment configuration; externalizing the parser alone does not include all dynamically loaded files. No AI provider is called during file extraction.
+
+Password-protected, unreadable and image-only PDFs have separate upload messages. Server initialization and unexpected parser failures return a temporary processing error instead of calling the file unsupported. Check Vercel runtime logs for `pdf_processing_failed` and its `initialize`, `extract` or `cleanup` stage; logs omit filenames, document content and raw exception messages. A production build verifies packaging, while a manual upload on the deployed site is still required to verify the hosting environment.
+
 ## Readiness and remaining verification
 
 The repository has a production build, Node version pin, deployment command, committed migrations, server-only provider configuration, owner/member authorization and persistent serverless-compatible source storage. No credentials belong in the commit.
