@@ -7,86 +7,78 @@ import {
 } from "@/features/mastery/strategy";
 import { publishedAssessmentSchema } from "@/features/assessments/schema";
 import { ownedClassroom } from "./curriculum-access";
-import { readTutorReports } from "./tutor";
 export async function readAnalytics(actor: Actor, classroomId: string) {
   await ownedClassroom(actor, classroomId, false);
   const db = getDatabase();
-  const [
-    enrollments,
-    concepts,
-    attempts,
-    events,
-    completions,
-    lessons,
-    reports,
-  ] = await Promise.all([
-    db.enrollment.findMany({
-      where: { classroomId },
-      select: { student: { select: { id: true, name: true } } },
-    }),
-    db.concept.findMany({
-      where: { classroomId },
-      orderBy: [{ unit: { order: "asc" } }, { order: "asc" }],
-      select: {
-        id: true,
-        title: true,
-        prerequisites: { select: { prerequisiteConceptId: true } },
-      },
-    }),
-    db.attempt.findMany({
-      where: {
-        submittedAt: { not: null },
-        student: { enrollments: { some: { classroomId } } },
-        assessment: { classroomId, classroom: { teacherId: actor.id } },
-      },
-      select: {
-        id: true,
-        assessmentId: true,
-        assessmentVersion: true,
-        studentId: true,
-        number: true,
-        submittedAt: true,
-        score: true,
-        maximumScore: true,
-        pendingReview: true,
-        snapshot: true,
-        questions: {
-          select: {
-            questionKey: true,
-            conceptIds: true,
-            difficulty: true,
-            hintsUsed: true,
-            marks: true,
-            maximumMarks: true,
-            needsReview: true,
+  const [enrollments, concepts, attempts, events, completions, lessons] =
+    await Promise.all([
+      db.enrollment.findMany({
+        where: { classroomId },
+        select: { student: { select: { id: true, name: true } } },
+      }),
+      db.concept.findMany({
+        where: { classroomId },
+        orderBy: [{ unit: { order: "asc" } }, { order: "asc" }],
+        select: {
+          id: true,
+          title: true,
+          prerequisites: { select: { prerequisiteConceptId: true } },
+        },
+      }),
+      db.attempt.findMany({
+        where: {
+          submittedAt: { not: null },
+          student: { enrollments: { some: { classroomId } } },
+          assessment: { classroomId, classroom: { teacherId: actor.id } },
+        },
+        select: {
+          id: true,
+          assessmentId: true,
+          assessmentVersion: true,
+          studentId: true,
+          number: true,
+          submittedAt: true,
+          score: true,
+          maximumScore: true,
+          pendingReview: true,
+          snapshot: true,
+          questions: {
+            select: {
+              questionKey: true,
+              conceptIds: true,
+              difficulty: true,
+              hintsUsed: true,
+              marks: true,
+              maximumMarks: true,
+              needsReview: true,
+            },
           },
         },
-      },
-      orderBy: { submittedAt: "asc" },
-    }),
-    db.learningEvent.groupBy({
-      by: ["type"],
-      where: {
-        classroomId,
-        createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) },
-        user: { role: "student", enrollments: { some: { classroomId } } },
-      },
-      _count: true,
-    }),
-    db.learningEvent.findMany({
-      where: {
-        classroomId,
-        type: "lesson_completed",
-        user: { enrollments: { some: { classroomId } } },
-      },
-      select: { dedupeKey: true, resourceId: true },
-    }),
-    db.lesson.findMany({
-      where: { classroomId, status: "published" },
-      select: { id: true, publishedVersion: true },
-    }),
-    readTutorReports(actor, classroomId),
-  ]);
+        orderBy: { submittedAt: "asc" },
+      }),
+      db.learningEvent.groupBy({
+        by: ["type"],
+        where: {
+          classroomId,
+          type: { not: "tutor_question" },
+          createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) },
+          user: { role: "student", enrollments: { some: { classroomId } } },
+        },
+        _count: true,
+      }),
+      db.learningEvent.findMany({
+        where: {
+          classroomId,
+          type: "lesson_completed",
+          user: { enrollments: { some: { classroomId } } },
+        },
+        select: { dedupeKey: true, resourceId: true },
+      }),
+      db.lesson.findMany({
+        where: { classroomId, status: "published" },
+        select: { id: true, publishedVersion: true },
+      }),
+    ]);
   const strategy = new WeightedMasteryStrategy();
   const evidence = new Map<string, Map<string, MasteryEvidence[]>>();
   const questions = new Map<
@@ -245,7 +237,6 @@ export async function readAnalytics(actor: Actor, classroomId: string) {
           trend.scores.length
         : null,
     })),
-    reports,
   };
 }
 export type AnalyticsView = Awaited<ReturnType<typeof readAnalytics>>;

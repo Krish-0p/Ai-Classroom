@@ -60,7 +60,9 @@ Each attempt freezes the published assessment, question marks, concept tags and 
 
 Student reads enforce classroom enrollment and ownership in database queries. Answer keys stay server-side until submission and only appear when solutions are enabled. A student cannot read another student's attempts or progress. Teacher review is limited to the classroom owner. Mutations require the configured Origin, a real session and validated input.
 
-Question generation uses `AI_FAST_PROVIDER` and `GROQ_FAST_MODEL`, with the existing Gemini text adapter as available fallback. Inputs include selected approved concepts and linked approved sources, without student responses or personal data. Output is schema-validated and never automatically published. Existing job limits, caching, bounded retries and safe metadata logging apply. Jobs run in-process; keep the Node server running during generation. Failure or conflicting changes leave the existing draft intact.
+Question generation uses `AI_FAST_PROVIDER` and `GROQ_FAST_MODEL`, with the existing Gemini text adapter as available fallback unless `AI_PROVIDER_FALLBACK_ENABLED=false`. Inputs include selected approved concepts and linked approved sources, without student responses or personal data. The provider schema constrains concept references to an enum of the selected IDs and requires the requested total question count. Database-specific `format: cuid` annotations are not sent in the generation schema; local domain validation still checks CUIDs, classroom membership, answer rules and the exact difficulty distribution before persistence. Output is schema-validated and never automatically published. Existing job limits, caching, bounded retries and safe metadata logging apply. Jobs run in-process; keep the Node server running during generation. Failure or conflicting changes leave the existing draft intact.
+
+Failed jobs retain their generation options and attempt metadata. Safe provider errors (including quota retry timing, request rejection and output truncation) are shown to the teacher instead of the generic question-generation error. A locally invalid generated question set is reported separately. HTTP 400 failures do not prove that the API key is invalid or that quota was exhausted; inspect the attempt status, failure reason and any allowlisted provider code.
 
 ## API
 
@@ -80,4 +82,4 @@ All paths below are under `/api/classrooms/:id`.
 
 For manual verification, exercise publication privacy, all question types, save/resume, attempt limits, hints, teacher review, mastery updates and isolation between students/classrooms. AI generation is optional and consumes provider quota only when explicitly requested in the UI.
 
-RAG tutor, teacher analytics and confusion maps are implemented in [Milestones E/F](tutor-analytics.md). Automatic adaptive remediation remains later work.
+Teacher analytics and confusion maps are implemented in [Milestones E/F](tutor-analytics.md). Classroom Tutor has been replaced by [Curriculum slides](slides.md). Automatic adaptive remediation remains later work.

@@ -3,7 +3,7 @@ import {
   curriculumShape,
   curriculumSchema,
 } from "@/features/curriculum/schema";
-export const CURRICULUM_PROMPT_VERSION = "curriculum-v1";
+export const CURRICULUM_PROMPT_VERSION = "curriculum-v2";
 export function curriculumPrompt(
   classroom: { name: string; academicLevel: string; language: string },
   sources: { filename: string; extractedText: string }[],

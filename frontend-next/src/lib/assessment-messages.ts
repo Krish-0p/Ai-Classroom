@@ -100,6 +100,8 @@ export const assessmentMessages = {
   queued: "Generation queued",
   generationFailed:
     "Question generation failed. Retry or write questions manually.",
+  generationInvalid:
+    "Generated questions did not meet the required question, concept or difficulty rules. Try fewer questions or write questions manually.",
   aiUnavailable: "Configure an AI provider, or create questions manually.",
   active: "In progress",
   student: "Student",

@@ -2,6 +2,10 @@
 
 ## 1. Project Mission
 
+### Current product direction (2026-10-21)
+
+The user has replaced Classroom Tutor with curriculum slides. Implement a teacher-reviewed, browser-based presentation of four or five slides from the approved curriculum, using the configured text provider. Do not build binary PPTX export. Retire tutor UI and provider-calling routes while preserving historical database data. This current request supersedes tutor requirements elsewhere in this original specification. Verification ownership below remains unchanged.
+
 Build an open-source, AI-powered adaptive classroom and learning
 laboratory for universities.
 

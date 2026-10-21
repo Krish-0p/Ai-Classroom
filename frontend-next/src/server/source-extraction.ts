@@ -3,8 +3,9 @@ import { fromBuffer, type Entry, type ZipFile } from "yauzl";
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { AppError } from "@/server/errors";
 import { curriculumMessages as m } from "@/lib/curriculum-messages";
+import { MAX_SOURCE_BYTES } from "@/lib/source-limits";
 
-export const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
+export { MAX_SOURCE_BYTES } from "@/lib/source-limits";
 export const MAX_SOURCE_TEXT = 120_000;
 export type SourceSection = { label: string; text: string };
 export type ExtractedSource = {

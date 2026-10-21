@@ -1,6 +1,10 @@
 export const aiMessages = {
   unknown:
     "The AI provider could not complete the request. Try again later or continue manually.",
+  configuration:
+    "The AI provider settings are invalid. Check the server provider, output mode, reasoning effort and token limit settings.",
+  outputLimit:
+    "The AI response reached its output limit. Use fewer source documents or request fewer items, or increase GROQ_MAX_COMPLETION_TOKENS on the server.",
   network:
     "The server cannot reach the AI provider. Check outbound network permissions or your connection, then retry.",
   timeout:

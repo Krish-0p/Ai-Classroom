@@ -19,7 +19,6 @@ import {
   EmptyDescription,
 } from "@/components/ui/empty";
 import { analyticsMessages as m } from "@/lib/analytics-messages";
-import { tutorMessages as tm } from "@/lib/tutor-messages";
 import { cn } from "@/lib/utils";
 const percentage = (value: number | null) =>
   value === null ? m.notMeasured : `${Math.round(value * 100)}%`;
@@ -403,45 +402,6 @@ export function AnalyticsDashboard({
                 </div>
               ))}
             </dl>
-          )}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h2>{tm.reports}</h2>
-          </CardTitle>
-          <CardDescription>{tm.reportHelp}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!data.reports.length ? (
-            <p>{tm.noReports}</p>
-          ) : (
-            <ul className="flex flex-col gap-5">
-              {data.reports.map((report) => (
-                <li key={report.id}>
-                  <p className="whitespace-pre-wrap break-words font-medium">
-                    {report.question}
-                  </p>
-                  <p className="mt-2 whitespace-pre-wrap break-words">
-                    {report.answer}
-                  </p>
-                  <details className="mt-2">
-                    <summary>{tm.source}</summary>
-                    {report.citations.map((c) => (
-                      <blockquote key={c.id} className="mt-3 border-l-2 pl-3">
-                        <p>
-                          {c.filename} · {c.label}
-                        </p>
-                        <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
-                          {c.text}
-                        </p>
-                      </blockquote>
-                    ))}
-                  </details>
-                </li>
-              ))}
-            </ul>
           )}
         </CardContent>
       </Card>

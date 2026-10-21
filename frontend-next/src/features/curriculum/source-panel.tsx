@@ -23,6 +23,7 @@ import { curriculumMessages as m } from "@/lib/curriculum-messages";
 import { messages } from "@/lib/messages";
 import { sendRequest } from "@/lib/request";
 import { pasteSchema } from "./schema";
+import { MAX_SOURCE_BYTES } from "@/lib/source-limits";
 type Job = {
   id: string;
   status: string;
@@ -109,7 +110,7 @@ export function SourcePanel({
   async function upload() {
     if (!file) return;
     await task(async () => {
-      if (file.size > 8 * 1024 * 1024) throw new Error(m.tooLarge);
+      if (file.size > MAX_SOURCE_BYTES) throw new Error(m.tooLarge);
       const form = new FormData();
       form.set("file", file);
       const response = await fetch(`/api/classrooms/${classroomId}/sources`, {

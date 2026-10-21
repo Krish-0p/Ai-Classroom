@@ -19,6 +19,9 @@ export type GenerationMetadata = {
   schemaValid: boolean;
   failureReason?: string;
   httpStatus?: number;
+  providerCode?: string;
+  retryAfterSeconds?: number;
+  validationIssues?: { path: string; code: string }[];
 };
 export function configuredProviders(
   task: "primary" | "fast" = "primary",
@@ -29,6 +32,9 @@ export function configuredProviders(
       : process.env.AI_PRIMARY_PROVIDER) ||
     (task === "fast" ? "groq" : "gemini");
   if (primary !== "gemini" && primary !== "groq") throw new ProviderError();
+  const fallback = process.env.AI_PROVIDER_FALLBACK_ENABLED || "true";
+  if (fallback !== "true" && fallback !== "false")
+    throw new ProviderError(false, "configuration");
   const providers: AIProvider[] = [];
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_TEXT_MODEL)
     providers.push(
@@ -43,9 +49,9 @@ export function configuredProviders(
       : process.env.GROQ_REASONING_MODEL;
   if (process.env.GROQ_API_KEY && groqModel)
     providers.push(new GroqProvider(process.env.GROQ_API_KEY, groqModel));
-  return providers.sort(
-    (a, b) => Number(b.name === primary) - Number(a.name === primary),
-  );
+  return providers
+    .filter((provider) => fallback === "true" || provider.name === primary)
+    .sort((a, b) => Number(b.name === primary) - Number(a.name === primary));
 }
 export async function routeStructured<T>(
   input: GenerateStructuredInput<T>,
@@ -56,6 +62,7 @@ export async function routeStructured<T>(
   let lastFailure: unknown;
   for (const provider of providers) {
     let corrected = false;
+    let correction = "";
     for (let attempt = 1; attempt <= 2; attempt++) {
       const start = Date.now();
       let tokens: number | undefined;
@@ -63,7 +70,7 @@ export async function routeStructured<T>(
         const response = await provider.generateText({
           ...input,
           prompt: corrected
-            ? `${input.prompt}\nYour previous response was invalid. Return a complete JSON object matching the supplied schema exactly. Use unique IDs and valid references. Do not return markdown fences.`
+            ? `${input.prompt}\nYour previous response was invalid. Fix these validation issues: ${correction}. Return a complete JSON object matching the supplied schema exactly. Use unique IDs and valid references. Do not return markdown fences.`
             : input.prompt,
         });
         tokens = response.tokens;
@@ -95,12 +102,32 @@ export async function routeStructured<T>(
           ...(error instanceof ProviderError && error.httpStatus
             ? { httpStatus: error.httpStatus }
             : {}),
+          ...(error instanceof ProviderError && error.providerCode
+            ? { providerCode: error.providerCode }
+            : {}),
+          ...(error instanceof ProviderError && error.retryAfterMs !== undefined
+            ? { retryAfterSeconds: Math.ceil(error.retryAfterMs / 1000) }
+            : {}),
+          ...(error instanceof StructuredOutputError
+            ? {
+                validationIssues: error.issues.map(({ path, code }) => ({
+                  path,
+                  code,
+                })),
+              }
+            : {}),
         });
-        if (error instanceof StructuredOutputError && !corrected)
+        if (error instanceof StructuredOutputError && !corrected) {
           corrected = true;
-        else if (!(error instanceof ProviderError && error.retryable)) break;
+          correction = JSON.stringify(error.issues);
+        } else if (!(error instanceof ProviderError && error.retryable)) break;
         if (attempt < 2)
-          await new Promise((resolve) => setTimeout(resolve, 300));
+          await new Promise((resolve) =>
+            setTimeout(
+              resolve,
+              1000 * 2 ** (attempt - 1) + Math.random() * 250,
+            ),
+          );
       }
     }
   }

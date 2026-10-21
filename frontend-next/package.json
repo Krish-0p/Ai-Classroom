@@ -2,9 +2,13 @@
   "name": "openlearn-lab",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:deploy": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
     "format:check": "prettier --check .",

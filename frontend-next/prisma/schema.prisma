@@ -104,6 +104,7 @@ model Classroom {
   assessments    Assessment[]
   masteryRecords MasteryRecord[]
 
+  slideDeck SlideDeck?
   sourceIndexes SourceIndex[]
   tutorConversations TutorConversation[]
   learningEvents LearningEvent[]
@@ -120,6 +121,12 @@ model Enrollment {
 
   @@id([classroomId, studentId])
   @@index([studentId])
+}
+
+model StoredSourceFile {
+  key String @id
+  data Bytes
+  createdAt DateTime @default(now())
 }
 
 model SourceDocument {
@@ -166,6 +173,20 @@ model CourseUnit {
   lessons     Lesson[]
 
   @@unique([classroomId, key])
+}
+
+model SlideDeck {
+  classroomId String @id
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  draft Json
+  version Int @default(1)
+  curriculumVersion Int
+  aiGenerated Boolean @default(false)
+  published Json?
+  publishedVersion Int @default(0)
+  publishedCurriculumVersion Int @default(0)
+  publishedAiGenerated Boolean @default(false)
+  updatedAt DateTime @updatedAt
 }
 
 model Concept {

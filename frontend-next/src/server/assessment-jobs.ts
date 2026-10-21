@@ -22,6 +22,7 @@ import {
   assessmentPrompt,
   ASSESSMENT_PROMPT_VERSION,
 } from "@/ai/prompts/assessment";
+import { ProviderError, StructuredOutputError } from "@/ai/providers/provider";
 import { AppError } from "@/server/errors";
 import { assessmentMessages as m } from "@/lib/assessment-messages";
 import { curriculumMessages as cm } from "@/lib/curriculum-messages";
@@ -134,6 +135,12 @@ export async function runAssessmentJob(id: string) {
   )
     return;
   const attempts: GenerationMetadata[] = [];
+  const metadata =
+    job.metadata &&
+    typeof job.metadata === "object" &&
+    !Array.isArray(job.metadata)
+      ? job.metadata
+      : {};
   try {
     if (
       !(
@@ -146,12 +153,6 @@ export async function runAssessmentJob(id: string) {
       return;
     const actor: Actor = { id: job.createdBy, role: "teacher", name: "" };
     const classroom = await ownedClassroom(actor, job.classroomId);
-    const metadata =
-      job.metadata &&
-      typeof job.metadata === "object" &&
-      !Array.isArray(job.metadata)
-        ? job.metadata
-        : {};
     const options = generationOptionsSchema.parse(metadata.options);
     const row = await db.assessment.findFirst({
       where: {
@@ -239,8 +240,13 @@ export async function runAssessmentJob(id: string) {
         where: { id, status: { in: ["queued", "generating"] } },
         data: {
           status: "failed",
-          error: error instanceof AppError ? error.message : m.generationFailed,
-          metadata: { attempts },
+          error:
+            error instanceof AppError || error instanceof ProviderError
+              ? error.message
+              : error instanceof StructuredOutputError
+                ? m.generationInvalid
+                : m.generationFailed,
+          metadata: { ...metadata, attempts },
         },
       })
       .catch(() => console.error("Could not persist assessment job status"));

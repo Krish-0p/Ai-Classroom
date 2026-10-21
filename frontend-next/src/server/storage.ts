@@ -2,6 +2,7 @@ import "server-only";
 import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { randomUUID } from "node:crypto";
+import { DatabaseSourceStorage } from "./database-source-storage";
 
 export interface SourceStorage {
   put(data: Uint8Array): Promise<string>;
@@ -33,4 +34,26 @@ export class LocalSourceStorage implements SourceStorage {
     });
   }
 }
-export const sourceStorage: SourceStorage = new LocalSourceStorage();
+const local = new LocalSourceStorage();
+const database = new DatabaseSourceStorage();
+function uploadStorage(): SourceStorage {
+  const provider =
+    process.env.SOURCE_STORAGE_PROVIDER ||
+    (process.env.VERCEL === "1" ? "database" : "local");
+  if (provider === "database") return database;
+  if (provider === "local" && process.env.VERCEL !== "1") return local;
+  throw new Error(
+    "Use SOURCE_STORAGE_PROVIDER=database on Vercel; local storage is only available on a persistent Node server.",
+  );
+}
+export const sourceStorage: SourceStorage = {
+  put(data) {
+    return uploadStorage().put(data);
+  },
+  read(key) {
+    return key.startsWith("db:") ? database.read(key) : local.read(key);
+  },
+  remove(key) {
+    return key.startsWith("db:") ? database.remove(key) : local.remove(key);
+  },
+};

@@ -4,7 +4,7 @@ import {
   questionShape,
   type GenerationOptions,
 } from "@/features/assessments/schema";
-export const ASSESSMENT_PROMPT_VERSION = "assessment-v1";
+export const ASSESSMENT_PROMPT_VERSION = "assessment-v2";
 export function assessmentPrompt(input: {
   course: string;
   level: string;
@@ -14,8 +14,17 @@ export function assessmentPrompt(input: {
   sources: { filename: string; extractedText: string }[];
   options: GenerationOptions;
 }) {
+  // Generated references must use the selected concepts. Keep database CUID
+  // validation in the domain schema, not the provider's JSON Schema format.
+  const generatedQuestionShape = questionShape.extend({
+    conceptIds: z.array(z.enum(input.options.conceptIds)).min(1).max(5),
+  });
+  const questionCount =
+    input.options.easy + input.options.medium + input.options.hard;
   const shape = z
-    .object({ questions: z.array(questionShape).min(1).max(20) })
+    .object({
+      questions: z.array(generatedQuestionShape).length(questionCount),
+    })
     .strict();
   const schema = shape.superRefine((value, ctx) => {
     const parsed = assessmentSchema.safeParse({

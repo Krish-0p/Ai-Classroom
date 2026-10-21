@@ -2,7 +2,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { BookOpenText, BrainCircuit, ChartNoAxesColumnIncreasing, Compass, ClipboardList } from "lucide-react";
+import {
+  BookOpenText,
+  Presentation,
+  ChartNoAxesColumnIncreasing,
+  Compass,
+  ClipboardList,
+} from "lucide-react";
 import {
   NativeSelect,
   NativeSelectOption,
@@ -12,13 +18,13 @@ import { messages as m } from "@/lib/messages";
 import { curriculumMessages } from "@/lib/curriculum-messages";
 import { lessonMessages } from "@/lib/lesson-messages";
 import { assessmentMessages } from "@/lib/assessment-messages";
-import { tutorMessages } from "@/lib/tutor-messages";
+import { slideMessages } from "@/lib/slide-messages";
 const destinations = [
   ["curriculum", curriculumMessages.title, Compass],
   ["lessons", lessonMessages.title, BookOpenText],
   ["assessments", assessmentMessages.title, ClipboardList],
   ["progress", assessmentMessages.progress, ChartNoAxesColumnIncreasing],
-  ["tutor", tutorMessages.title, BrainCircuit],
+  ["slides", slideMessages.title, Presentation],
 ] as const;
 export function StudentNavigation({
   classrooms,
@@ -36,28 +42,31 @@ export function StudentNavigation({
   return (
     <section className="workspace-context-nav" aria-label={m.studentTools}>
       <div className="workspace-context-select">
-      {classroom ? (
-        <Field className="max-w-sm">
-          <FieldLabel htmlFor="student-classroom">
-            {m.learningClassroom}
-          </FieldLabel>
-          <NativeSelect
-            id="student-classroom"
-            value={classroom.id}
-            onChange={(event) =>
-              router.push(`/dashboard/classrooms/${event.target.value}`)
-            }
-          >
-            {classrooms.map((item) => (
-              <NativeSelectOption key={item.id} value={item.id}>
-                {item.name}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-      ) : (
-        <div className="workspace-context-empty"><span>{m.learningClassroom}</span><p>{m.joinForTools}</p></div>
-      )}
+        {classroom ? (
+          <Field className="max-w-sm">
+            <FieldLabel htmlFor="student-classroom">
+              {m.learningClassroom}
+            </FieldLabel>
+            <NativeSelect
+              id="student-classroom"
+              value={classroom.id}
+              onChange={(event) =>
+                router.push(`/dashboard/classrooms/${event.target.value}`)
+              }
+            >
+              {classrooms.map((item) => (
+                <NativeSelectOption key={item.id} value={item.id}>
+                  {item.name}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </Field>
+        ) : (
+          <div className="workspace-context-empty">
+            <span>{m.learningClassroom}</span>
+            <p>{m.joinForTools}</p>
+          </div>
+        )}
       </div>
       <nav className="workspace-context-links" aria-label={m.studentTools}>
         {destinations.map(([path, label, Icon]) => {

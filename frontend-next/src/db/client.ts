@@ -9,8 +9,8 @@ export function getDatabase() {
   if (!connectionString) throw new Error("DATABASE_URL is not configured");
   const adapter = new PrismaPg({
     connectionString,
-    max: 10,
-    connectionTimeoutMillis: 5000,
+    max: process.env.VERCEL === "1" ? 5 : 10,
+    connectionTimeoutMillis: 10_000,
   });
   globalDatabase.prisma = new PrismaClient({ adapter });
   return globalDatabase.prisma;

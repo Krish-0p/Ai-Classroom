@@ -1,8 +1,10 @@
-# OpenLearn Lab — Classroom, Tutor and Analytics
+# OpenLearn Lab — Classroom, Slides and Analytics
 
-Milestones A–F. A modular Next.js/TypeScript monolith with PostgreSQL, Prisma, Better Auth, classrooms, private document ingestion, AI curriculum/lesson/question drafts, teacher approval, knowledge graphs, lesson and assessment players, teacher review, concept mastery, a cited classroom tutor and teacher analytics. See [`../AGENTS.md`](../AGENTS.md), [Foundation decisions](docs/foundation.md), [Curriculum architecture](docs/curriculum.md), [Lesson workflow](docs/lessons.md), [Assessment and mastery workflow](docs/assessments.md) and [Tutor and analytics](docs/tutor-analytics.md).
+Deploy to Vercel with Neon using the [step-by-step deployment guide](docs/deployment.md). Set the Vercel root directory to `frontend-next`; no nested repository is needed. The deployment build generates Prisma, applies migrations and builds Next.js. Small source files use database-backed storage on Vercel.
 
-The requested production build includes TypeScript checking. Migrations through tutor/analytics are applied to this workspace's local database. Functional verification remains with the user; no automated tests, browser checks or live AI checks were run for the latest milestones. Other installations need pgvector and must apply migrations using `npm run db:deploy`.
+Milestones A–F plus curriculum slides. A modular Next.js/TypeScript monolith with PostgreSQL, Prisma, Better Auth, classrooms, private document ingestion, AI curriculum/lesson/question drafts, teacher approval, knowledge graphs, lesson and assessment players, teacher review, concept mastery, 4–5 editable curriculum slides and teacher analytics. Classroom Tutor has been retired. See [`../AGENTS.md`](../AGENTS.md), [Foundation decisions](docs/foundation.md), [Curriculum architecture](docs/curriculum.md), [Lesson workflow](docs/lessons.md), [Assessment and mastery workflow](docs/assessments.md) and [Curriculum slides](docs/slides.md).
+
+The requested production build includes TypeScript checking. Migrations through curriculum slides are applied to this workspace's local database. Functional verification remains with the user; no automated tests, browser checks or live AI checks were run for the slides feature. Other installations need pgvector for the preserved historical schema and must apply migrations using `npm run db:deploy`.
 
 ## Local setup
 
@@ -16,6 +18,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 Paste the generated value into `BETTER_AUTH_SECRET` in `.env.local`. Never commit this file. Keep `BETTER_AUTH_URL` equal to the browser origin, including its port. All configuration is server-only. Configure Gemini and/or Groq keys and model IDs for AI extraction; manual curriculum editing works without them.
+
+For Groq-only text generation, set `AI_PRIMARY_PROVIDER=groq`, `AI_FAST_PROVIDER=groq`, `AI_PROVIDER_FALLBACK_ENABLED=false`, and both Groq text model settings to `openai/gpt-oss-20b` in `frontend-next/.env.local`. The root Python prototype's `.env` is not loaded by this app. Restart the app after changing configuration. Groq uses strict structured output and a configurable 4,096-token completion limit by default. See [AI configuration](docs/curriculum.md#configuration) for output modes, reasoning effort and rate-limit handling. Curriculum slides use this same text provider; no Gemini key, embeddings or PPTX library is needed.
 
 Password recovery uses Better Auth reset tokens and the Resend email API. Set `RESEND_API_KEY` and a verified sender address in `RESEND_FROM_EMAIL` to deliver reset links; recovery links expire after 30 minutes and password changes revoke existing sessions. The reset request response does not reveal whether an email is registered.
 
@@ -45,14 +49,14 @@ Open <http://localhost:3000>. Use `DATABASE_URL` to connect to an existing Postg
 
 11. Open **Assessments**, create questions manually or generate by concept and difficulty, review answers and publish. The student can answer, save, resume and submit. Review written/coding responses as the teacher; inspect **My progress** as the student.
 
-12. Open **Classroom tutor** as the teacher and explicitly index approved sources. Students can then ask grounded questions and inspect cited excerpts. Indexing and questions consume provider quota; merely viewing screens does not.
+12. Open **Curriculum slides** as the teacher. Edit the ready-made curriculum outline, or explicitly generate 4–5 slides with simple explanations and examples. Save, preview and publish them. Students see only the published slide player. Generation consumes provider quota; opening, editing, presenting and publishing do not.
 13. Open **Learning analytics** as the teacher to inspect mastery, review signals, assessment summaries, activity and the clickable confusion map.
 
-There are no seeded passwords or default admin accounts. Registration fixes the teacher/student role. Slides, narration, voice and automatic adaptive remediation remain later work.
+There are no seeded passwords or default admin accounts. Registration fixes the teacher/student role. Browser slides are implemented; binary PPTX export, narration, voice and automatic adaptive remediation remain later work. Tutor links redirect to slides, tutor APIs return HTTP 410 after access checks, and historical tutor data remains in the database without an active chat interface.
 
 For a production build and local server, run `npm run build` followed by `npm run start`, leaving the terminal and database running.
 
-Student learning links are available in the dashboard navigation. Select an enrolled classroom to open Curriculum, Lessons, Assessments, My progress or Classroom tutor. Before joining a classroom, the links are disabled and the join-code instructions are shown.
+Student learning links are available in the dashboard navigation. Select an enrolled classroom to open Curriculum, Lessons, Assessments, My progress or Curriculum slides. Before joining a classroom, the links are disabled and the join-code instructions are shown.
 
 AI extraction requires outbound HTTPS from the Node server to the configured provider endpoints. Start the application in a normal terminal or a runtime with network access; a restricted agent sandbox can block connections with `EACCES`. Extraction now distinguishes network, timeout, credentials, model, quota and request failures from invalid generated curriculum. Error messages and diagnostic metadata exclude keys and provider response bodies.
 

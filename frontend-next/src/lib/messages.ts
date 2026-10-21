@@ -118,7 +118,7 @@ export const messages = {
   studentTools: "Student learning tools",
   learningClassroom: "Learning classroom",
   joinForTools:
-    "Join a classroom using your teacher's code to access Curriculum, Lessons, Assessments, My progress and Classroom tutor.",
+    "Join a classroom using your teacher's code to access Curriculum, Lessons, Assessments, My progress and Curriculum slides.",
   teacherTools: "Teacher classroom tools",
   teachingClassroom: "Teaching classroom",
   createForTools: "Create a classroom to organize your curriculum, lessons, assessments and class insights.",

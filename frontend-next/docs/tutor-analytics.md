@@ -1,5 +1,7 @@
 # Milestones E and F — Grounded Tutor and Learning Analytics
 
+> Current product direction: Classroom Tutor has been retired and replaced by [Curriculum slides](slides.md). The tutor UI and provider-calling endpoints described below are historical; legacy APIs now return HTTP 410 and old page links redirect to slides. Historical database data is preserved. Teacher analytics remain active, without tutor reports or tutor-question activity totals.
+
 These milestones extend the existing curriculum, lesson, assessment and mastery features. They do not add slides, narration, voice, automatic remedial generation or other post-V1 work. Existing authoring and grading behavior is retained.
 
 ## Setup

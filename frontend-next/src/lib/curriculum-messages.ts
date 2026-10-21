@@ -8,7 +8,7 @@ export const curriculumMessages = {
   linkedSourceHelp:
     "These selected sources are approved alongside the curriculum and can ground lesson generation.",
   sourceHelp:
-    "Upload PDF, DOCX, PPTX or TXT (up to 8 MB). Legacy PPT and scanned PDFs need conversion to text first.",
+    "Upload PDF, DOCX, PPTX or TXT (up to 4 MB). Legacy PPT and scanned PDFs need conversion to text first.",
   sourceName: "Source name",
   sourceText: "Paste syllabus or notes",
   paste: "Save pasted source",

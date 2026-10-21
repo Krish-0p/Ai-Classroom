@@ -20,7 +20,7 @@ import { messages as m } from "@/lib/messages";
 
 const steps = [
   { number: "01", title: "Shape the course", description: "Bring your syllabus into one clear, connected curriculum.", icon: Compass, color: "sun" },
-  { number: "02", title: "Teach with context", description: "Build lessons, practice and a tutor grounded in approved material.", icon: BookOpenCheck, color: "coral" },
+  { number: "02", title: "Teach with context", description: "Build lessons, practice and simple slides from your approved curriculum.", icon: BookOpenCheck, color: "coral" },
   { number: "03", title: "See understanding", description: "Give students useful feedback. Help teachers see where to go next.", icon: BrainCircuit, color: "mint" },
 ] as const;
 

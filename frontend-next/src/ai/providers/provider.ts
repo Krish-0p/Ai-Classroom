@@ -21,23 +21,49 @@ export class ProviderError extends Error {
     public readonly retryable = false,
     public readonly reason: keyof typeof aiMessages = "unknown",
     public readonly httpStatus?: number,
+    public readonly retryAfterMs?: number,
+    public readonly providerCode?: string,
   ) {
-    super(aiMessages[reason]);
+    super(
+      aiMessages[reason] +
+        (retryAfterMs !== undefined
+          ? ` Retry after ${Math.ceil(retryAfterMs / 1000)} seconds.`
+          : ""),
+    );
     this.name = "ProviderError";
   }
 }
 export class StructuredOutputError extends Error {
-  constructor() {
-    super("AI output did not match the curriculum schema");
+  constructor(
+    public readonly issues: {
+      path: string;
+      code: string;
+      message: string;
+    }[] = [],
+  ) {
+    super("AI output did not match the requested schema");
   }
 }
 export function parseStructured<T>(text: string, schema: z.ZodType<T>): T {
+  let value: unknown;
   try {
-    const value: unknown = JSON.parse(text);
-    const result = schema.safeParse(value);
-    if (result.success) return result.data;
+    value = JSON.parse(text);
   } catch {
-    /* Only schema-validated JSON may enter the application. */
+    throw new StructuredOutputError([
+      {
+        path: "$",
+        code: "invalid_json",
+        message: "Return a complete JSON object without Markdown fences.",
+      },
+    ]);
   }
-  throw new StructuredOutputError();
+  const result = schema.safeParse(value);
+  if (result.success) return result.data;
+  throw new StructuredOutputError(
+    result.error.issues.slice(0, 8).map((issue) => ({
+      path: issue.path.join(".") || "$",
+      code: issue.code,
+      message: issue.message.slice(0, 300),
+    })),
+  );
 }
