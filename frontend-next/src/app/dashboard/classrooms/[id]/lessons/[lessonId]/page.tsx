@@ -8,6 +8,7 @@ import { LessonEditor } from "@/features/lessons/editor";
 import { LessonPlayer } from "@/features/lessons/player";
 import { lessonMessages as m } from "@/lib/lesson-messages";
 import { curriculumMessages as cm } from "@/lib/curriculum-messages";
+import { WorkspacePageHeader } from "@/components/workspace/page-header";
 export default async function LessonPage({
   params,
 }: {
@@ -25,22 +26,18 @@ export default async function LessonPage({
     throw error;
   }
   return (
-    <div className="flex flex-col gap-6">
+    <div className="learning-page">
       <Link
         href={`/dashboard/classrooms/${id}/lessons`}
         className="text-sm underline underline-offset-4"
       >
         {m.back}
       </Link>
-      <div>
-        <h1 className="break-words text-3xl font-semibold tracking-tight">
-          {lesson.document.title}
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          {lesson.conceptTitle} · {lesson.document.estimatedMinutes}{" "}
-          {m.minuteLabel}
-        </p>
-      </div>
+      <WorkspacePageHeader
+        title={lesson.document.title}
+        eyebrow={classroom.name}
+        description={`${lesson.conceptTitle} · ${lesson.document.estimatedMinutes} ${m.minuteLabel}`}
+      />
       {lesson.kind === "teacher" ? (
         <>
           {classroom.status === "archived" && (

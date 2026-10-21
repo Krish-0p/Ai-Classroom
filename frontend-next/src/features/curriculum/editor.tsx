@@ -24,6 +24,14 @@ import { KnowledgeGraph } from "@/features/knowledge-graph/graph";
 import { curriculumMessages as m } from "@/lib/curriculum-messages";
 import { sendRequest } from "@/lib/request";
 import { messages } from "@/lib/messages";
+import { SectionTabs } from "@/components/workspace/section-tabs";
+import { workspaceMessages as w } from "@/lib/workspace-messages";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 type Props = {
   classroomId: string;
@@ -163,6 +171,7 @@ export function CurriculumEditor({
   }
   const graph = curriculumSchema.safeParse(draft);
   const allConcepts = draft.units.flatMap((unit) => unit.concepts);
+  const locked = disabled || busy;
   return (
     <Card>
       <CardHeader>
@@ -172,268 +181,334 @@ export function CurriculumEditor({
         <CardDescription>{m.draftHelp}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
-        <fieldset
-          disabled={disabled || busy}
-          className="flex min-w-0 flex-col gap-6"
-        >
-          <FieldGroup>
-            <FieldSet>
-              <FieldLegend variant="label">{m.linkedSources}</FieldLegend>
-              <p className="text-sm text-muted-foreground">
-                {m.linkedSourceHelp}
-              </p>
-              {availableSources.map((source) => (
-                <label
-                  key={source.id}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={sourceIds.includes(source.id)}
-                    onChange={(event) => {
-                      setSourceIds((previous) =>
-                        event.target.checked
-                          ? [...previous, source.id]
-                          : previous.filter((id) => id !== source.id),
-                      );
-                      setDirty(true);
-                    }}
-                  />
-                  {source.filename}
-                </label>
-              ))}
-            </FieldSet>
-            <Field>
-              <FieldLabel htmlFor="curriculum-title">
-                {m.courseTitle}
-              </FieldLabel>
-              <Input
-                id="curriculum-title"
-                value={draft.courseTitle}
-                maxLength={160}
-                onChange={(event) =>
-                  change({ ...draft, courseTitle: event.target.value })
-                }
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="curriculum-outcomes">
-                {m.outcomes}
-              </FieldLabel>
-              <Textarea
-                id="curriculum-outcomes"
-                value={outcomes}
-                onChange={(event) => {
-                  setOutcomes(event.target.value);
-                  setDirty(true);
-                }}
-              />
-            </Field>
-          </FieldGroup>
-          {draft.units.map((unit, unitIndex) => (
-            <FieldSet key={unit.id} className="rounded-lg border p-4">
-              <FieldLegend>
-                {m.unit} {unitIndex + 1}
-              </FieldLegend>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={unitIndex === 0}
-                  onClick={() =>
-                    change({
-                      ...draft,
-                      units: reordered(draft.units, unitIndex, -1),
-                    })
-                  }
-                >
-                  {m.up}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={unitIndex === draft.units.length - 1}
-                  onClick={() =>
-                    change({
-                      ...draft,
-                      units: reordered(draft.units, unitIndex, 1),
-                    })
-                  }
-                >
-                  {m.down}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    removeConcepts(
-                      unit.concepts.map((concept) => concept.id),
-                      unitIndex,
-                    )
-                  }
-                >
-                  {m.remove} {m.unit.toLowerCase()}
-                </Button>
-              </div>
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor={`unit-${unit.id}`}>
-                    {m.unit} {m.courseTitle.toLowerCase()}
-                  </FieldLabel>
-                  <Input
-                    id={`unit-${unit.id}`}
-                    value={unit.title}
-                    maxLength={160}
-                    onChange={(event) =>
-                      unitChange(unitIndex, { title: event.target.value })
-                    }
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor={`description-${unit.id}`}>
-                    {m.description}
-                  </FieldLabel>
-                  <Textarea
-                    id={`description-${unit.id}`}
-                    value={unit.description}
-                    maxLength={2000}
-                    onChange={(event) =>
-                      unitChange(unitIndex, { description: event.target.value })
-                    }
-                  />
-                </Field>
-              </FieldGroup>
-              {unit.concepts.map((concept, index) => (
-                <FieldSet key={concept.id} className="rounded-lg border p-4">
-                  <FieldLegend>
-                    {m.concept} {index + 1}
-                  </FieldLegend>
+        <div className="flex min-w-0 flex-col gap-6">
+          <SectionTabs
+            outline
+            label={w.courseOutline}
+            sections={[
+              {
+                id: "details",
+                label: w.courseDetails,
+                content: (
                   <FieldGroup>
+                    <FieldSet>
+                      <FieldLegend variant="label">
+                        {m.linkedSources}
+                      </FieldLegend>
+                      <p className="text-sm text-muted-foreground">
+                        {m.linkedSourceHelp}
+                      </p>
+                      {availableSources.map((source) => (
+                        <label
+                          key={source.id}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            disabled={locked}
+                            checked={sourceIds.includes(source.id)}
+                            onChange={(event) => {
+                              setSourceIds((previous) =>
+                                event.target.checked
+                                  ? [...previous, source.id]
+                                  : previous.filter((id) => id !== source.id),
+                              );
+                              setDirty(true);
+                            }}
+                          />
+                          {source.filename}
+                        </label>
+                      ))}
+                    </FieldSet>
                     <Field>
-                      <FieldLabel htmlFor={`concept-${concept.id}`}>
-                        {m.concept} {m.courseTitle.toLowerCase()}
+                      <FieldLabel htmlFor="curriculum-title">
+                        {m.courseTitle}
                       </FieldLabel>
                       <Input
-                        id={`concept-${concept.id}`}
-                        value={concept.title}
+                        disabled={locked}
+                        id="curriculum-title"
+                        value={draft.courseTitle}
                         maxLength={160}
                         onChange={(event) =>
-                          conceptChange(unitIndex, index, {
-                            title: event.target.value,
-                          })
+                          change({ ...draft, courseTitle: event.target.value })
                         }
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor={`description-${concept.id}`}>
-                        {m.description}
+                      <FieldLabel htmlFor="curriculum-outcomes">
+                        {m.outcomes}
                       </FieldLabel>
                       <Textarea
-                        id={`description-${concept.id}`}
-                        value={concept.description}
-                        maxLength={2000}
-                        onChange={(event) =>
-                          conceptChange(unitIndex, index, {
-                            description: event.target.value,
-                          })
-                        }
+                        disabled={locked}
+                        id="curriculum-outcomes"
+                        value={outcomes}
+                        onChange={(event) => {
+                          setOutcomes(event.target.value);
+                          setDirty(true);
+                        }}
                       />
                     </Field>
                   </FieldGroup>
-                  <FieldSet>
-                    <FieldLegend variant="label">{m.prerequisites}</FieldLegend>
-                    <div className="grid max-h-48 gap-2 overflow-auto sm:grid-cols-2">
-                      {allConcepts
-                        .filter((candidate) => candidate.id !== concept.id)
-                        .map((candidate) => (
-                          <label
-                            key={candidate.id}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={concept.prerequisiteIds.includes(
-                                candidate.id,
-                              )}
-                              onChange={(event) =>
-                                conceptChange(unitIndex, index, {
-                                  prerequisiteIds: event.target.checked
-                                    ? [...concept.prerequisiteIds, candidate.id]
-                                    : concept.prerequisiteIds.filter(
-                                        (id) => id !== candidate.id,
-                                      ),
-                                })
-                              }
-                            />
-                            {candidate.title || m.concept}
-                          </label>
-                        ))}
-                      {allConcepts.length < 2 && (
-                        <p className="text-sm text-muted-foreground">
-                          {m.noPrerequisites}
-                        </p>
-                      )}
+                ),
+              },
+              ...draft.units.map((unit, unitIndex) => ({
+                id: unit.id,
+                label: unit.title || `${m.unit} ${unitIndex + 1}`,
+                content: (
+                  <FieldSet key={unit.id} className="rounded-lg border p-4">
+                    <FieldLegend>
+                      {m.unit} {unitIndex + 1}
+                    </FieldLegend>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={locked || unitIndex === 0}
+                        onClick={() =>
+                          change({
+                            ...draft,
+                            units: reordered(draft.units, unitIndex, -1),
+                          })
+                        }
+                      >
+                        {m.up}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={
+                          locked || unitIndex === draft.units.length - 1
+                        }
+                        onClick={() =>
+                          change({
+                            ...draft,
+                            units: reordered(draft.units, unitIndex, 1),
+                          })
+                        }
+                      >
+                        {m.down}
+                      </Button>
+                      <Button
+                        disabled={locked}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          removeConcepts(
+                            unit.concepts.map((concept) => concept.id),
+                            unitIndex,
+                          )
+                        }
+                      >
+                        {m.remove} {m.unit.toLowerCase()}
+                      </Button>
                     </div>
+                    <FieldGroup>
+                      <Field>
+                        <FieldLabel htmlFor={`unit-${unit.id}`}>
+                          {m.unit} {m.courseTitle.toLowerCase()}
+                        </FieldLabel>
+                        <Input
+                          disabled={locked}
+                          id={`unit-${unit.id}`}
+                          value={unit.title}
+                          maxLength={160}
+                          onChange={(event) =>
+                            unitChange(unitIndex, { title: event.target.value })
+                          }
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor={`description-${unit.id}`}>
+                          {m.description}
+                        </FieldLabel>
+                        <Textarea
+                          disabled={locked}
+                          id={`description-${unit.id}`}
+                          value={unit.description}
+                          maxLength={2000}
+                          onChange={(event) =>
+                            unitChange(unitIndex, {
+                              description: event.target.value,
+                            })
+                          }
+                        />
+                      </Field>
+                    </FieldGroup>
+                    <Accordion
+                      defaultValue={
+                        unit.concepts[0] ? [unit.concepts[0].id] : []
+                      }
+                    >
+                      {unit.concepts.map((concept, index) => (
+                        <AccordionItem key={concept.id} value={concept.id}>
+                          <AccordionTrigger>
+                            {index + 1}. {concept.title || m.concept}
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <FieldSet
+                              key={concept.id}
+                              className="rounded-lg border p-4"
+                            >
+                              <FieldLegend>
+                                {m.concept} {index + 1}
+                              </FieldLegend>
+                              <FieldGroup>
+                                <Field>
+                                  <FieldLabel htmlFor={`concept-${concept.id}`}>
+                                    {m.concept} {m.courseTitle.toLowerCase()}
+                                  </FieldLabel>
+                                  <Input
+                                    disabled={locked}
+                                    id={`concept-${concept.id}`}
+                                    value={concept.title}
+                                    maxLength={160}
+                                    onChange={(event) =>
+                                      conceptChange(unitIndex, index, {
+                                        title: event.target.value,
+                                      })
+                                    }
+                                  />
+                                </Field>
+                                <Field>
+                                  <FieldLabel
+                                    htmlFor={`description-${concept.id}`}
+                                  >
+                                    {m.description}
+                                  </FieldLabel>
+                                  <Textarea
+                                    disabled={locked}
+                                    id={`description-${concept.id}`}
+                                    value={concept.description}
+                                    maxLength={2000}
+                                    onChange={(event) =>
+                                      conceptChange(unitIndex, index, {
+                                        description: event.target.value,
+                                      })
+                                    }
+                                  />
+                                </Field>
+                              </FieldGroup>
+                              <FieldSet>
+                                <FieldLegend variant="label">
+                                  {m.prerequisites}
+                                </FieldLegend>
+                                <div className="grid max-h-48 gap-2 overflow-auto sm:grid-cols-2">
+                                  {allConcepts
+                                    .filter(
+                                      (candidate) =>
+                                        candidate.id !== concept.id,
+                                    )
+                                    .map((candidate) => (
+                                      <label
+                                        key={candidate.id}
+                                        className="flex items-center gap-2 text-sm"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          disabled={locked}
+                                          checked={concept.prerequisiteIds.includes(
+                                            candidate.id,
+                                          )}
+                                          onChange={(event) =>
+                                            conceptChange(unitIndex, index, {
+                                              prerequisiteIds: event.target
+                                                .checked
+                                                ? [
+                                                    ...concept.prerequisiteIds,
+                                                    candidate.id,
+                                                  ]
+                                                : concept.prerequisiteIds.filter(
+                                                    (id) => id !== candidate.id,
+                                                  ),
+                                            })
+                                          }
+                                        />
+                                        {candidate.title || m.concept}
+                                      </label>
+                                    ))}
+                                  {allConcepts.length < 2 && (
+                                    <p className="text-sm text-muted-foreground">
+                                      {m.noPrerequisites}
+                                    </p>
+                                  )}
+                                </div>
+                              </FieldSet>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={locked || index === 0}
+                                  onClick={() =>
+                                    unitChange(unitIndex, {
+                                      concepts: reordered(
+                                        unit.concepts,
+                                        index,
+                                        -1,
+                                      ),
+                                    })
+                                  }
+                                >
+                                  {m.up}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={
+                                    locked || index === unit.concepts.length - 1
+                                  }
+                                  onClick={() =>
+                                    unitChange(unitIndex, {
+                                      concepts: reordered(
+                                        unit.concepts,
+                                        index,
+                                        1,
+                                      ),
+                                    })
+                                  }
+                                >
+                                  {m.down}
+                                </Button>
+                                <Button
+                                  disabled={locked}
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => removeConcepts([concept.id])}
+                                >
+                                  {m.remove} {m.concept.toLowerCase()}
+                                </Button>
+                              </div>
+                            </FieldSet>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={locked || unit.concepts.length >= 50}
+                      onClick={() =>
+                        unitChange(unitIndex, {
+                          concepts: [...unit.concepts, newConcept()],
+                        })
+                      }
+                    >
+                      {m.addConcept}
+                    </Button>
                   </FieldSet>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={index === 0}
-                      onClick={() =>
-                        unitChange(unitIndex, {
-                          concepts: reordered(unit.concepts, index, -1),
-                        })
-                      }
-                    >
-                      {m.up}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={index === unit.concepts.length - 1}
-                      onClick={() =>
-                        unitChange(unitIndex, {
-                          concepts: reordered(unit.concepts, index, 1),
-                        })
-                      }
-                    >
-                      {m.down}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => removeConcepts([concept.id])}
-                    >
-                      {m.remove} {m.concept.toLowerCase()}
-                    </Button>
-                  </div>
-                </FieldSet>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                disabled={unit.concepts.length >= 50}
-                onClick={() =>
-                  unitChange(unitIndex, {
-                    concepts: [...unit.concepts, newConcept()],
-                  })
-                }
-              >
-                {m.addConcept}
-              </Button>
-            </FieldSet>
-          ))}
+                ),
+              })),
+            ]}
+          />
           <Button
             type="button"
             variant="outline"
-            disabled={draft.units.length >= 20}
+            disabled={locked || draft.units.length >= 20}
             onClick={() =>
               change({
                 ...draft,
@@ -451,7 +526,8 @@ export function CurriculumEditor({
           >
             {m.addUnit}
           </Button>
-          <div className="flex flex-wrap gap-3">
+          <fieldset disabled={locked} className="workspace-save-bar">
+            <p role="status">{dirty ? w.unsaved : w.saved}</p>
             <Button type="button" onClick={save}>
               {busy ? messages.working : m.save}
             </Button>
@@ -463,8 +539,8 @@ export function CurriculumEditor({
             >
               {m.approve}
             </Button>
-          </div>
-        </fieldset>
+          </fieldset>
+        </div>
         {error && (
           <Alert variant="destructive">
             <AlertDescription role="alert">{error}</AlertDescription>
@@ -475,7 +551,16 @@ export function CurriculumEditor({
             {notice}
           </p>
         )}
-        {graph.success && <KnowledgeGraph curriculum={graph.data} id="draft" />}
+        {graph.success && (
+          <Accordion>
+            <AccordionItem value="map">
+              <AccordionTrigger>{w.knowledgeMap}</AccordionTrigger>
+              <AccordionContent>
+                <KnowledgeGraph curriculum={graph.data} id="draft" />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
       </CardContent>
     </Card>
   );

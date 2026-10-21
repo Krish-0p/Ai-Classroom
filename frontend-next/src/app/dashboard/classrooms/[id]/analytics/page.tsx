@@ -5,6 +5,7 @@ import { readAnalytics } from "@/server/analytics";
 import { AppError } from "@/server/errors";
 import { AnalyticsDashboard } from "@/features/analytics/dashboard";
 import { analyticsMessages as m } from "@/lib/analytics-messages";
+import { WorkspacePageHeader } from "@/components/workspace/page-header";
 export default async function AnalyticsPage({
   params,
 }: {
@@ -15,14 +16,14 @@ export default async function AnalyticsPage({
   try {
     const data = await readAnalytics(actor, id);
     return (
-      <div className="flex flex-col gap-6">
+      <div className="learning-page">
         <Link
           className="text-sm underline"
           href={`/dashboard/classrooms/${id}`}
         >
           {m.back}
         </Link>
-        <h1 className="text-3xl font-semibold tracking-tight">{m.title}</h1>
+        <WorkspacePageHeader title={m.title} description={m.description} />
         <AnalyticsDashboard data={data} classroomId={id} />
       </div>
     );

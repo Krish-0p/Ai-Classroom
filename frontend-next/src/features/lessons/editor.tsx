@@ -25,6 +25,9 @@ import { LessonPlayer } from "./player";
 import { sendRequest } from "@/lib/request";
 import { lessonMessages as m } from "@/lib/lesson-messages";
 import { messages } from "@/lib/messages";
+import { SectionTabs } from "@/components/workspace/section-tabs";
+import { Progress } from "@/components/ui/progress";
+import { workspaceMessages as w } from "@/lib/workspace-messages";
 type Job = {
   id: string;
   status: string;
@@ -178,74 +181,140 @@ export function LessonEditor({
               </p>
             )}
           </div>
-          <fieldset
-            disabled={disabled || busy || running}
-            className="flex min-w-0 flex-col gap-5"
-          >
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="lesson-title">{m.lessonTitle}</FieldLabel>
-                <Input
-                  id="lesson-title"
-                  value={document.title}
-                  maxLength={160}
-                  onChange={(event) =>
-                    change({ ...document, title: event.target.value })
-                  }
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="lesson-minutes">{m.minutes}</FieldLabel>
-                <Input
-                  id="lesson-minutes"
-                  type="number"
-                  min={1}
-                  max={180}
-                  value={document.estimatedMinutes}
-                  onChange={(event) =>
-                    change({
-                      ...document,
-                      estimatedMinutes: Number(event.target.value),
-                    })
-                  }
-                />
-              </Field>
-            </FieldGroup>
-            {document.blocks.map((block, index) => (
-              <BlockEditor
-                key={block.id}
-                block={block}
-                index={index}
-                count={document.blocks.length}
-                update={(next) =>
-                  change({
-                    ...document,
-                    blocks: document.blocks.map((existing) =>
-                      existing.id === block.id ? next : existing,
-                    ),
-                  })
-                }
-                remove={() =>
-                  change({
-                    ...document,
-                    blocks: document.blocks.filter(
-                      (existing) => existing.id !== block.id,
-                    ),
-                  })
-                }
-                move={(delta) => {
-                  const blocks = [...document.blocks];
-                  [blocks[index], blocks[index + delta]] = [
-                    blocks[index + delta],
-                    blocks[index],
-                  ];
-                  change({ ...document, blocks });
-                }}
-              />
-            ))}
+          <div className="flex min-w-0 flex-col gap-5">
+            <SectionTabs
+              outline
+              disabledContent={disabled || busy || running}
+              label={m.studio}
+              sections={[
+                {
+                  id: "settings",
+                  label: w.details,
+                  content: (
+                    <FieldGroup>
+                      <Field>
+                        <FieldLabel htmlFor="lesson-title">
+                          {m.lessonTitle}
+                        </FieldLabel>
+                        <Input
+                          id="lesson-title"
+                          value={document.title}
+                          maxLength={160}
+                          onChange={(event) =>
+                            change({ ...document, title: event.target.value })
+                          }
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="lesson-minutes">
+                          {m.minutes}
+                        </FieldLabel>
+                        <Input
+                          id="lesson-minutes"
+                          type="number"
+                          min={1}
+                          max={180}
+                          value={document.estimatedMinutes}
+                          onChange={(event) =>
+                            change({
+                              ...document,
+                              estimatedMinutes: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </Field>
+                    </FieldGroup>
+                  ),
+                },
+                ...document.blocks.map((block, index) => ({
+                  id: block.id,
+                  label: `${index + 1}. ${block.title || m[block.type]}`,
+                  content: (
+                    <BlockEditor
+                      key={block.id}
+                      block={block}
+                      index={index}
+                      count={document.blocks.length}
+                      update={(next) =>
+                        change({
+                          ...document,
+                          blocks: document.blocks.map((existing) =>
+                            existing.id === block.id ? next : existing,
+                          ),
+                        })
+                      }
+                      remove={() =>
+                        change({
+                          ...document,
+                          blocks: document.blocks.filter(
+                            (existing) => existing.id !== block.id,
+                          ),
+                        })
+                      }
+                      move={(delta) => {
+                        const blocks = [...document.blocks];
+                        [blocks[index], blocks[index + delta]] = [
+                          blocks[index + delta],
+                          blocks[index],
+                        ];
+                        change({ ...document, blocks });
+                      }}
+                    />
+                  ),
+                })),
+                {
+                  id: "generate",
+                  label: w.generation,
+                  content: (
+                    <div className="flex flex-col gap-5">
+                      <Field>
+                        <FieldLabel htmlFor="lesson-instruction">
+                          {m.instruction}
+                        </FieldLabel>
+                        <Textarea
+                          id="lesson-instruction"
+                          value={instruction}
+                          maxLength={1000}
+                          placeholder={m.instructionPlaceholder}
+                          onChange={(event) =>
+                            setInstruction(event.target.value)
+                          }
+                        />
+                      </Field>
+                      <p className="text-sm text-muted-foreground">
+                        {m.generationHelp}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={dirty}
+                        onClick={() =>
+                          task(async () => {
+                            const result = await sendRequest<{ id: string }>(
+                              `${base}/generate`,
+                              { version, instruction },
+                            );
+                            setJob({
+                              id: result.id,
+                              status: "queued",
+                              progress: 0,
+                              error: null,
+                            });
+                            setNotice("");
+                          })
+                        }
+                      >
+                        {m.generate}
+                      </Button>
+                    </div>
+                  ),
+                },
+              ]}
+            />
             <Field>
               <FieldLabel htmlFor="new-block-type">{m.blockType}</FieldLabel>
               <select
+                disabled={disabled || busy || running}
                 id="new-block-type"
                 className="h-10 w-full rounded-lg border bg-background px-3"
                 value={newType}
@@ -263,7 +332,9 @@ export function LessonEditor({
             <Button
               type="button"
               variant="outline"
-              disabled={document.blocks.length >= 40}
+              disabled={
+                disabled || busy || running || document.blocks.length >= 40
+              }
               onClick={() =>
                 change({
                   ...document,
@@ -273,7 +344,11 @@ export function LessonEditor({
             >
               {m.addBlock}
             </Button>
-            <div className="flex flex-wrap gap-3">
+            <fieldset
+              disabled={disabled || busy || running}
+              className="workspace-save-bar"
+            >
+              <p role="status">{dirty ? w.unsaved : w.saved}</p>
               <Button type="button" onClick={save}>
                 {busy ? messages.working : m.save}
               </Button>
@@ -315,43 +390,8 @@ export function LessonEditor({
                   {m.archive}
                 </Button>
               )}
-            </div>
-            <Field>
-              <FieldLabel htmlFor="lesson-instruction">
-                {m.instruction}
-              </FieldLabel>
-              <Textarea
-                id="lesson-instruction"
-                value={instruction}
-                maxLength={1000}
-                placeholder={m.instructionPlaceholder}
-                onChange={(event) => setInstruction(event.target.value)}
-              />
-            </Field>
-            <p className="text-sm text-muted-foreground">{m.generationHelp}</p>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={dirty}
-              onClick={() =>
-                task(async () => {
-                  const result = await sendRequest<{ id: string }>(
-                    `${base}/generate`,
-                    { version, instruction },
-                  );
-                  setJob({
-                    id: result.id,
-                    status: "queued",
-                    progress: 0,
-                    error: null,
-                  });
-                  setNotice("");
-                })
-              }
-            >
-              {m.generate}
-            </Button>
-          </fieldset>
+            </fieldset>
+          </div>
           {job && (
             <div role="status" className="flex flex-col gap-2 text-sm">
               <p>
@@ -365,7 +405,7 @@ export function LessonEditor({
               </p>
               {running && (
                 <>
-                  <progress
+                  <Progress
                     aria-label={m.generating}
                     max={100}
                     value={job.progress}

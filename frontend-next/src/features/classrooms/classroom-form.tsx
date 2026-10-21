@@ -21,6 +21,7 @@ import {
 } from "@/features/classrooms/schema";
 import { sendRequest } from "@/lib/request";
 import { messages as m } from "@/lib/messages";
+import { cn } from "@/lib/utils";
 
 type Props = { id?: string; initial?: ClassroomInput };
 export function ClassroomForm({ id, initial }: Props) {
@@ -87,7 +88,7 @@ export function ClassroomForm({ id, initial }: Props) {
       onSubmit={submit}
       noValidate
       aria-busy={pending}
-      className="flex flex-col gap-6"
+      className={cn("flex flex-col gap-6", id && "classroom-settings-form")}
     >
       <FieldGroup>
         {fields.map((field) => (

@@ -13,12 +13,6 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import {
-  Empty,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyDescription,
-} from "@/components/ui/empty";
 import { DeleteButton } from "@/features/classrooms/delete-button";
 import { messages as m } from "@/lib/messages";
 export default async function ClassroomPage({
@@ -94,34 +88,25 @@ export default async function ClassroomPage({
               {classroom.status === "archived" ? m.archivedHelp : m.joinHelp}
             </CardFooter>
           </Card>
-          <section id="students" className="classroom-roster" aria-label={m.enrolledStudents}>
-            <h2 className="mb-4 text-xl font-semibold">{m.enrolledStudents}</h2>
-            {!classroom.enrollments?.length ? (
-              <Empty className="border">
-                <EmptyHeader>
-                  <EmptyTitle>{m.noStudents}</EmptyTitle>
-                  <EmptyDescription>{m.noStudentsHelp}</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <ul className="flex flex-col gap-3">
-                {classroom.enrollments.map((enrollment) => (
-                  <li
-                    key={enrollment.student.id}
-                    className="flex flex-wrap justify-between gap-2 rounded-lg border p-4"
-                  >
-                    <span>{enrollment.student.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {m.joined}{" "}
-                      {enrollment.joinedAt.toLocaleDateString("en-IN", {
-                        timeZone: "UTC",
-                      })}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <Card id="students">
+            <CardHeader>
+              <CardTitle>
+                <h2>{m.enrolledStudents}</h2>
+              </CardTitle>
+              <CardDescription>
+                {classroom.enrollments?.length ?? 0}{" "}
+                {m.studentsNav.toLowerCase()}
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Link
+                href={`/dashboard/classrooms/${id}/students`}
+                className={buttonVariants({ variant: "outline" })}
+              >
+                {m.studentsNav}
+              </Link>
+            </CardFooter>
+          </Card>
           <DeleteButton id={id} />
         </>
       )}

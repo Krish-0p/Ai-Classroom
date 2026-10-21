@@ -32,6 +32,9 @@ import { QuestionInputControl } from "./question-input";
 import { assessmentMessages as m } from "@/lib/assessment-messages";
 import { messages } from "@/lib/messages";
 import { sendRequest } from "@/lib/request";
+import { SectionTabs } from "@/components/workspace/section-tabs";
+import { Progress } from "@/components/ui/progress";
+import { workspaceMessages as w } from "@/lib/workspace-messages";
 type Job = {
   id: string;
   status: string;
@@ -172,97 +175,217 @@ export function AssessmentEditor({
             <span className="text-sm">{m.changed}</span>
           )}
         </div>
-        <fieldset
-          disabled={disabled || busy || running}
-          className="flex min-w-0 flex-col gap-5"
-        >
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="assessment-title">{m.name}</FieldLabel>
-              <Input
-                id="assessment-title"
-                maxLength={160}
-                value={document.title}
-                onChange={(e) => change({ ...document, title: e.target.value })}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="assessment-instructions">
-                {m.instructions}
-              </FieldLabel>
-              <Textarea
-                id="assessment-instructions"
-                value={document.instructions}
-                maxLength={4000}
-                onChange={(e) =>
-                  change({ ...document, instructions: e.target.value })
-                }
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="assessment-attempts">
-                {m.maxAttempts}
-              </FieldLabel>
-              <Input
-                id="assessment-attempts"
-                type="number"
-                min={1}
-                max={5}
-                value={document.maxAttempts}
-                onChange={(e) =>
-                  change({ ...document, maxAttempts: Number(e.target.value) })
-                }
-              />
-            </Field>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={document.showSolutions}
-                onChange={(e) =>
-                  change({ ...document, showSolutions: e.target.checked })
-                }
-              />
-              {m.showSolutions}
-            </label>
-          </FieldGroup>
+        <div className="flex min-w-0 flex-col gap-5">
+          <SectionTabs
+            outline
+            disabledContent={disabled || busy || running}
+            label={m.studio}
+            sections={[
+              {
+                id: "settings",
+                label: w.details,
+                content: (
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="assessment-title">
+                        {m.name}
+                      </FieldLabel>
+                      <Input
+                        id="assessment-title"
+                        maxLength={160}
+                        value={document.title}
+                        onChange={(e) =>
+                          change({ ...document, title: e.target.value })
+                        }
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="assessment-instructions">
+                        {m.instructions}
+                      </FieldLabel>
+                      <Textarea
+                        id="assessment-instructions"
+                        value={document.instructions}
+                        maxLength={4000}
+                        onChange={(e) =>
+                          change({ ...document, instructions: e.target.value })
+                        }
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="assessment-attempts">
+                        {m.maxAttempts}
+                      </FieldLabel>
+                      <Input
+                        id="assessment-attempts"
+                        type="number"
+                        min={1}
+                        max={5}
+                        value={document.maxAttempts}
+                        onChange={(e) =>
+                          change({
+                            ...document,
+                            maxAttempts: Number(e.target.value),
+                          })
+                        }
+                      />
+                    </Field>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={document.showSolutions}
+                        onChange={(e) =>
+                          change({
+                            ...document,
+                            showSolutions: e.target.checked,
+                          })
+                        }
+                      />
+                      {m.showSolutions}
+                    </label>
+                  </FieldGroup>
+                ),
+              },
+              ...document.questions.map((q, index) => ({
+                id: q.id,
+                label: `${index + 1}. ${q.prompt.slice(0, 72) || w.question}${q.prompt.length > 72 ? "…" : ""}`,
+                content: (
+                  <QuestionEditor
+                    key={q.id}
+                    question={q}
+                    index={index}
+                    count={document.questions.length}
+                    concepts={concepts}
+                    update={(next) =>
+                      change({
+                        ...document,
+                        questions: document.questions.map((item) =>
+                          item.id === q.id ? next : item,
+                        ),
+                      })
+                    }
+                    remove={() =>
+                      change({
+                        ...document,
+                        questions: document.questions.filter(
+                          (item) => item.id !== q.id,
+                        ),
+                      })
+                    }
+                    move={(delta) => {
+                      const next = [...document.questions];
+                      [next[index], next[index + delta]] = [
+                        next[index + delta],
+                        next[index],
+                      ];
+                      change({ ...document, questions: next });
+                    }}
+                  />
+                ),
+              })),
+              {
+                id: "generate",
+                label: w.generation,
+                content: (
+                  <FieldSet>
+                    <FieldLegend>{m.generate}</FieldLegend>
+                    <p className="text-sm text-muted-foreground">
+                      {m.generationHelp}
+                    </p>
+                    <FieldSet>
+                      <FieldLegend variant="label">{m.concepts}</FieldLegend>
+                      <div className="grid max-h-48 gap-2 overflow-auto sm:grid-cols-2">
+                        {concepts.map((concept) => (
+                          <label
+                            key={concept.id}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={options.conceptIds.includes(concept.id)}
+                              onChange={(e) =>
+                                setOptions({
+                                  ...options,
+                                  conceptIds: e.target.checked
+                                    ? [...options.conceptIds, concept.id]
+                                    : options.conceptIds.filter(
+                                        (id) => id !== concept.id,
+                                      ),
+                                })
+                              }
+                            />
+                            {concept.title}
+                          </label>
+                        ))}
+                      </div>
+                    </FieldSet>
+                    <FieldGroup className="sm:grid sm:grid-cols-3">
+                      {(["easy", "medium", "hard"] as const).map(
+                        (difficulty) => (
+                          <Field key={difficulty}>
+                            <FieldLabel htmlFor={`count-${difficulty}`}>
+                              {m[difficulty]}
+                            </FieldLabel>
+                            <Input
+                              id={`count-${difficulty}`}
+                              type="number"
+                              min={0}
+                              max={20}
+                              value={options[difficulty]}
+                              onChange={(e) =>
+                                setOptions({
+                                  ...options,
+                                  [difficulty]: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </Field>
+                        ),
+                      )}
+                    </FieldGroup>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={dirty || !concepts.length}
+                      onClick={() => {
+                        const parsed =
+                          generationOptionsSchema.safeParse(options);
+                        if (!parsed.success) {
+                          setError(parsed.error.issues[0].message);
+                          return;
+                        }
+                        void task(async () => {
+                          const result = await sendRequest<{ id: string }>(
+                            `${base}/generate`,
+                            { version, options: parsed.data },
+                          );
+                          setJob({
+                            id: result.id,
+                            status: "queued",
+                            progress: 0,
+                            error: null,
+                          });
+                        });
+                      }}
+                    >
+                      {m.generate}
+                    </Button>
+                  </FieldSet>
+                ),
+              },
+            ]}
+          />
           {!concepts.length && <p>{m.noConcepts}</p>}
-          {document.questions.map((q, index) => (
-            <QuestionEditor
-              key={q.id}
-              question={q}
-              index={index}
-              count={document.questions.length}
-              concepts={concepts}
-              update={(next) =>
-                change({
-                  ...document,
-                  questions: document.questions.map((item) =>
-                    item.id === q.id ? next : item,
-                  ),
-                })
-              }
-              remove={() =>
-                change({
-                  ...document,
-                  questions: document.questions.filter(
-                    (item) => item.id !== q.id,
-                  ),
-                })
-              }
-              move={(delta) => {
-                const next = [...document.questions];
-                [next[index], next[index + delta]] = [
-                  next[index + delta],
-                  next[index],
-                ];
-                change({ ...document, questions: next });
-              }}
-            />
-          ))}
           <Button
             type="button"
             variant="outline"
-            disabled={document.questions.length >= 30 || !concepts.length}
+            disabled={
+              disabled ||
+              busy ||
+              running ||
+              document.questions.length >= 30 ||
+              !concepts.length
+            }
             onClick={() =>
               change({
                 ...document,
@@ -272,7 +395,11 @@ export function AssessmentEditor({
           >
             {m.addQuestion}
           </Button>
-          <div className="flex flex-wrap gap-3">
+          <fieldset
+            disabled={disabled || busy || running}
+            className="workspace-save-bar"
+          >
+            <p role="status">{dirty ? w.unsaved : w.saved}</p>
             <Button type="button" onClick={save}>
               {m.save}
             </Button>
@@ -302,87 +429,8 @@ export function AssessmentEditor({
             >
               {m.archive}
             </Button>
-          </div>
-          <FieldSet>
-            <FieldLegend>{m.generate}</FieldLegend>
-            <p className="text-sm text-muted-foreground">{m.generationHelp}</p>
-            <FieldSet>
-              <FieldLegend variant="label">{m.concepts}</FieldLegend>
-              <div className="grid max-h-48 gap-2 overflow-auto sm:grid-cols-2">
-                {concepts.map((concept) => (
-                  <label
-                    key={concept.id}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={options.conceptIds.includes(concept.id)}
-                      onChange={(e) =>
-                        setOptions({
-                          ...options,
-                          conceptIds: e.target.checked
-                            ? [...options.conceptIds, concept.id]
-                            : options.conceptIds.filter(
-                                (id) => id !== concept.id,
-                              ),
-                        })
-                      }
-                    />
-                    {concept.title}
-                  </label>
-                ))}
-              </div>
-            </FieldSet>
-            <FieldGroup>
-              {(["easy", "medium", "hard"] as const).map((difficulty) => (
-                <Field key={difficulty}>
-                  <FieldLabel htmlFor={`count-${difficulty}`}>
-                    {m[difficulty]}
-                  </FieldLabel>
-                  <Input
-                    id={`count-${difficulty}`}
-                    type="number"
-                    min={0}
-                    max={20}
-                    value={options[difficulty]}
-                    onChange={(e) =>
-                      setOptions({
-                        ...options,
-                        [difficulty]: Number(e.target.value),
-                      })
-                    }
-                  />
-                </Field>
-              ))}
-            </FieldGroup>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={dirty || !concepts.length}
-              onClick={() => {
-                const parsed = generationOptionsSchema.safeParse(options);
-                if (!parsed.success) {
-                  setError(parsed.error.issues[0].message);
-                  return;
-                }
-                void task(async () => {
-                  const result = await sendRequest<{ id: string }>(
-                    `${base}/generate`,
-                    { version, options: parsed.data },
-                  );
-                  setJob({
-                    id: result.id,
-                    status: "queued",
-                    progress: 0,
-                    error: null,
-                  });
-                });
-              }}
-            >
-              {m.generate}
-            </Button>
-          </FieldSet>
-        </fieldset>
+          </fieldset>
+        </div>
         {job && (
           <div role="status">
             <p className="text-sm">
@@ -395,7 +443,7 @@ export function AssessmentEditor({
                     : m.generating}
             </p>
             {running && (
-              <progress
+              <Progress
                 className="w-full"
                 aria-label={m.generating}
                 max={100}

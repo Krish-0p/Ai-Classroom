@@ -35,6 +35,8 @@ import type { SlideTeacherView } from "@/server/slides";
 import { sendRequest } from "@/lib/request";
 import { slideMessages as m } from "@/lib/slide-messages";
 import { messages } from "@/lib/messages";
+import { SectionTabs } from "@/components/workspace/section-tabs";
+import { workspaceMessages as w } from "@/lib/workspace-messages";
 
 type Job = {
   id: string;
@@ -123,7 +125,7 @@ export function SlidesWorkspace({
     setNotice("");
   }
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="slide-studio-layout">
       <Card>
         <CardHeader>
           <CardTitle>
@@ -288,118 +290,156 @@ export function SlidesWorkspace({
           )}
         </CardFooter>
       </Card>
-      <section aria-label={m.preview}>
-        <SlidePlayer deck={document} concepts={initial.concepts} />
-      </section>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h2>{m.edit}</h2>
-          </CardTitle>
-          <CardDescription>{m.review}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <fieldset
-            disabled={disabled || busy || running}
-            className="flex min-w-0 flex-col gap-5"
-          >
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor={`${prefix}-title`}>
-                  {m.deckTitle}
-                </FieldLabel>
-                <Input
-                  id={`${prefix}-title`}
-                  value={document.title}
-                  maxLength={160}
-                  onChange={(event) =>
-                    setDocument({ ...document, title: event.target.value })
-                  }
-                />
-              </Field>
-            </FieldGroup>
-            {document.slides.map((slide, index) => (
-              <details
-                className="slide-editor-section"
-                key={index}
-                open={index === 0 ? true : undefined}
-              >
-                <summary>
-                  {m.slide} {index + 1}: {slide.heading}
-                </summary>
-                <FieldGroup className="mt-4">
-                  <Field>
-                    <FieldLabel htmlFor={`${prefix}-heading-${index}`}>
-                      {m.heading}
-                    </FieldLabel>
-                    <Input
-                      id={`${prefix}-heading-${index}`}
-                      value={slide.heading}
-                      maxLength={160}
-                      onChange={(event) =>
-                        changeSlide(index, { heading: event.target.value })
-                      }
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor={`${prefix}-explanation-${index}`}>
-                      {m.explanation}
-                    </FieldLabel>
-                    <Textarea
-                      id={`${prefix}-explanation-${index}`}
-                      value={slide.explanation}
-                      maxLength={650}
-                      onChange={(event) =>
-                        changeSlide(index, { explanation: event.target.value })
-                      }
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor={`${prefix}-bullets-${index}`}>
-                      {m.bullets}
-                    </FieldLabel>
-                    <Textarea
-                      id={`${prefix}-bullets-${index}`}
-                      value={slide.bullets.join("\n")}
-                      onChange={(event) =>
-                        changeSlide(index, {
-                          bullets: event.target.value.split("\n"),
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor={`${prefix}-example-${index}`}>
-                      {m.example}
-                    </FieldLabel>
-                    <Textarea
-                      id={`${prefix}-example-${index}`}
-                      value={slide.example}
-                      maxLength={450}
-                      onChange={(event) =>
-                        changeSlide(index, { example: event.target.value })
-                      }
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor={`${prefix}-takeaway-${index}`}>
-                      {m.takeaway}
-                    </FieldLabel>
-                    <Input
-                      id={`${prefix}-takeaway-${index}`}
-                      value={slide.takeaway}
-                      maxLength={240}
-                      onChange={(event) =>
-                        changeSlide(index, { takeaway: event.target.value })
-                      }
-                    />
-                  </Field>
-                </FieldGroup>
-              </details>
-            ))}
-          </fieldset>
-        </CardContent>
-      </Card>
+      <div className="slide-studio-main">
+        <SectionTabs
+          label={m.studio}
+          sections={[
+            {
+              id: "preview",
+              label: w.present,
+              content: (
+                <section aria-label={m.preview}>
+                  <SlidePlayer deck={document} concepts={initial.concepts} />
+                </section>
+              ),
+            },
+            {
+              id: "edit",
+              label: w.edit,
+              content: (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      <h2>{m.edit}</h2>
+                    </CardTitle>
+                    <CardDescription>{m.review}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex min-w-0 flex-col gap-5">
+                      <FieldGroup>
+                        <Field>
+                          <FieldLabel htmlFor={`${prefix}-title`}>
+                            {m.deckTitle}
+                          </FieldLabel>
+                          <Input
+                            id={`${prefix}-title`}
+                            disabled={disabled || busy || running}
+                            value={document.title}
+                            maxLength={160}
+                            onChange={(event) =>
+                              setDocument({
+                                ...document,
+                                title: event.target.value,
+                              })
+                            }
+                          />
+                        </Field>
+                      </FieldGroup>
+                      <SectionTabs
+                        outline
+                        disabledContent={disabled || busy || running}
+                        label={m.edit}
+                        sections={document.slides.map((slide, index) => ({
+                          id: String(index),
+                          label: `${m.slide} ${index + 1}: ${slide.heading}`,
+                          content: (
+                            <FieldGroup>
+                              <Field>
+                                <FieldLabel
+                                  htmlFor={`${prefix}-heading-${index}`}
+                                >
+                                  {m.heading}
+                                </FieldLabel>
+                                <Input
+                                  id={`${prefix}-heading-${index}`}
+                                  value={slide.heading}
+                                  maxLength={160}
+                                  onChange={(event) =>
+                                    changeSlide(index, {
+                                      heading: event.target.value,
+                                    })
+                                  }
+                                />
+                              </Field>
+                              <Field>
+                                <FieldLabel
+                                  htmlFor={`${prefix}-explanation-${index}`}
+                                >
+                                  {m.explanation}
+                                </FieldLabel>
+                                <Textarea
+                                  id={`${prefix}-explanation-${index}`}
+                                  value={slide.explanation}
+                                  maxLength={650}
+                                  onChange={(event) =>
+                                    changeSlide(index, {
+                                      explanation: event.target.value,
+                                    })
+                                  }
+                                />
+                              </Field>
+                              <Field>
+                                <FieldLabel
+                                  htmlFor={`${prefix}-bullets-${index}`}
+                                >
+                                  {m.bullets}
+                                </FieldLabel>
+                                <Textarea
+                                  id={`${prefix}-bullets-${index}`}
+                                  value={slide.bullets.join("\n")}
+                                  onChange={(event) =>
+                                    changeSlide(index, {
+                                      bullets: event.target.value.split("\n"),
+                                    })
+                                  }
+                                />
+                              </Field>
+                              <Field>
+                                <FieldLabel
+                                  htmlFor={`${prefix}-example-${index}`}
+                                >
+                                  {m.example}
+                                </FieldLabel>
+                                <Textarea
+                                  id={`${prefix}-example-${index}`}
+                                  value={slide.example}
+                                  maxLength={450}
+                                  onChange={(event) =>
+                                    changeSlide(index, {
+                                      example: event.target.value,
+                                    })
+                                  }
+                                />
+                              </Field>
+                              <Field>
+                                <FieldLabel
+                                  htmlFor={`${prefix}-takeaway-${index}`}
+                                >
+                                  {m.takeaway}
+                                </FieldLabel>
+                                <Input
+                                  id={`${prefix}-takeaway-${index}`}
+                                  value={slide.takeaway}
+                                  maxLength={240}
+                                  onChange={(event) =>
+                                    changeSlide(index, {
+                                      takeaway: event.target.value,
+                                    })
+                                  }
+                                />
+                              </Field>
+                            </FieldGroup>
+                          ),
+                        }))}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ),
+            },
+          ]}
+        />
+      </div>
     </div>
   );
 }

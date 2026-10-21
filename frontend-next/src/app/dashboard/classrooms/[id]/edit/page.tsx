@@ -13,6 +13,8 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { messages as m } from "@/lib/messages";
+import { workspaceMessages as w } from "@/lib/workspace-messages";
+import { Badge } from "@/components/ui/badge";
 export default async function EditClassroomPage({
   params,
 }: {
@@ -37,19 +39,58 @@ export default async function EditClassroomPage({
     status: classroom.status,
   };
   return (
-    <Card className="max-w-2xl">
-      <CardHeader>
-        <CardTitle>
+    <div className="learning-page">
+      <header className="learning-page-hero">
+        <div>
+          <p className="learning-page-eyebrow">{classroom.name}</p>
           <h1>{m.editClassroom}</h1>
-        </CardTitle>
-        <CardDescription>{classroom.name}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ClassroomForm id={id} initial={initial} />
-      </CardContent>
-      <CardFooter>
-        <Link href={`/dashboard/classrooms/${id}`}>{m.cancel}</Link>
-      </CardFooter>
-    </Card>
+          <p>{w.settingsHelp}</p>
+        </div>
+        <Badge variant="secondary">{m[classroom.status]}</Badge>
+      </header>
+      <div className="settings-layout">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2>{w.courseDetails}</h2>
+            </CardTitle>
+            <CardDescription>{classroom.name}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ClassroomForm id={id} initial={initial} />
+          </CardContent>
+          <CardFooter>
+            <Link href={`/dashboard/classrooms/${id}`}>{m.cancel}</Link>
+          </CardFooter>
+        </Card>
+        <aside>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <h2>{w.settingsGuide}</h2>
+              </CardTitle>
+              <CardDescription>{w.settingsNote}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <p className="text-sm text-muted-foreground">
+                {m.teacherName}: {classroom.teacher.name}
+              </p>
+              <p className="text-sm text-muted-foreground">{m.joinCode}</p>
+              <code className="text-xl tracking-widest">
+                {classroom.joinCode}
+              </code>
+            </CardContent>
+            <CardFooter>
+              <Link
+                className="text-sm underline underline-offset-4"
+                href={`/dashboard/classrooms/${id}/students`}
+              >
+                {m.studentsNav}
+              </Link>
+            </CardFooter>
+          </Card>
+        </aside>
+      </div>
+    </div>
   );
 }

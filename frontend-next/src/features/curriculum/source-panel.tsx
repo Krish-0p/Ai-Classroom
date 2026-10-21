@@ -24,6 +24,7 @@ import { messages } from "@/lib/messages";
 import { sendRequest } from "@/lib/request";
 import { pasteSchema } from "./schema";
 import { MAX_SOURCE_BYTES } from "@/lib/source-limits";
+import { Progress } from "@/components/ui/progress";
 type Job = {
   id: string;
   status: string;
@@ -147,7 +148,7 @@ export function SourcePanel({
         </CardTitle>
         <CardDescription>{m.sourceHelp}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="source-workspace">
         <fieldset
           disabled={busy || disabled}
           className="flex min-w-0 flex-col gap-4"
@@ -194,93 +195,95 @@ export function SourcePanel({
             {m.upload}
           </Button>
         </fieldset>
-        {sources.length ? (
-          <ul className="flex flex-col gap-3">
-            {sources.map((source) => (
-              <li
-                key={source.id}
-                className="flex items-center gap-3 rounded-lg border p-3"
-              >
-                <input
-                  type="checkbox"
-                  aria-label={`${m.selection}: ${source.filename}`}
-                  checked={selected.includes(source.id)}
-                  disabled={busy || running || disabled}
-                  onChange={(event) =>
-                    setSelected((previous) =>
-                      event.target.checked
-                        ? [...previous, source.id]
-                        : previous.filter((id) => id !== source.id),
-                    )
-                  }
-                />
-                <a
-                  href={`/api/classrooms/${classroomId}/sources/${source.id}`}
-                  className="break-all text-sm underline underline-offset-4"
+        <div className="flex min-w-0 flex-col gap-5">
+          {sources.length ? (
+            <ul className="flex flex-col gap-3">
+              {sources.map((source) => (
+                <li
+                  key={source.id}
+                  className="flex items-center gap-3 rounded-lg border p-3"
                 >
-                  {source.filename}
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Empty className="border">
-            <EmptyHeader>
-              <EmptyTitle>{m.noSources}</EmptyTitle>
-              <EmptyDescription>{m.noSourcesHelp}</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        )}
-        <p className="text-sm text-muted-foreground">{m.generateHelp}</p>
-        <Button
-          type="button"
-          disabled={busy || running || disabled || !selected.length}
-          onClick={() =>
-            task(async () => {
-              const response = await sendRequest<{ id: string }>(
-                `/api/classrooms/${classroomId}/curriculum/generate`,
-                { sourceIds: selected },
-              );
-              setJob({
-                id: response.id,
-                status: "queued",
-                progress: 0,
-                error: null,
-              });
-            })
-          }
-        >
-          {busy ? messages.working : m.generate}
-        </Button>
-        {job && (
-          <div role="status" className="flex flex-col gap-2 text-sm">
-            <p>
-              {job.status === "complete"
-                ? m.complete
-                : job.status === "failed"
-                  ? job.error || m.failed
-                  : job.status === "queued"
-                    ? m.queued
-                    : m.generating}
-            </p>
-            {running && (
-              <>
-                <progress
-                  aria-label={m.generating}
-                  value={job.progress}
-                  max={100}
-                  className="w-full"
-                />
-                <p className="text-muted-foreground">{m.pendingHelp}</p>
-              </>
-            )}
-          </div>
-        )}
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription role="alert">{error}</AlertDescription>
-          </Alert>
-        )}
+                  <input
+                    type="checkbox"
+                    aria-label={`${m.selection}: ${source.filename}`}
+                    checked={selected.includes(source.id)}
+                    disabled={busy || running || disabled}
+                    onChange={(event) =>
+                      setSelected((previous) =>
+                        event.target.checked
+                          ? [...previous, source.id]
+                          : previous.filter((id) => id !== source.id),
+                      )
+                    }
+                  />
+                  <a
+                    href={`/api/classrooms/${classroomId}/sources/${source.id}`}
+                    className="break-all text-sm underline underline-offset-4"
+                  >
+                    {source.filename}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Empty className="border">
+              <EmptyHeader>
+                <EmptyTitle>{m.noSources}</EmptyTitle>
+                <EmptyDescription>{m.noSourcesHelp}</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+          <p className="text-sm text-muted-foreground">{m.generateHelp}</p>
+          <Button
+            type="button"
+            disabled={busy || running || disabled || !selected.length}
+            onClick={() =>
+              task(async () => {
+                const response = await sendRequest<{ id: string }>(
+                  `/api/classrooms/${classroomId}/curriculum/generate`,
+                  { sourceIds: selected },
+                );
+                setJob({
+                  id: response.id,
+                  status: "queued",
+                  progress: 0,
+                  error: null,
+                });
+              })
+            }
+          >
+            {busy ? messages.working : m.generate}
+          </Button>
+          {job && (
+            <div role="status" className="flex flex-col gap-2 text-sm">
+              <p>
+                {job.status === "complete"
+                  ? m.complete
+                  : job.status === "failed"
+                    ? job.error || m.failed
+                    : job.status === "queued"
+                      ? m.queued
+                      : m.generating}
+              </p>
+              {running && (
+                <>
+                  <Progress
+                    aria-label={m.generating}
+                    value={job.progress}
+                    max={100}
+                    className="w-full"
+                  />
+                  <p className="text-muted-foreground">{m.pendingHelp}</p>
+                </>
+              )}
+            </div>
+          )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription role="alert">{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -21,6 +21,13 @@ import { FormError } from "@/components/form-error";
 import { sendRequest } from "@/lib/request";
 import { assessmentMessages as m } from "@/lib/assessment-messages";
 import { messages } from "@/lib/messages";
+import { SectionTabs } from "@/components/workspace/section-tabs";
+import { workspaceMessages as w } from "@/lib/workspace-messages";
+function responseLabel(value: QuestionResponse | undefined) {
+  return (Array.isArray(value) ? value.length > 0 : Boolean(value?.trim()))
+    ? w.answered
+    : w.notAnswered;
+}
 function TeacherReview({
   base,
   question,
@@ -206,112 +213,126 @@ export function AttemptContent({
           <p className="text-sm text-muted-foreground">{m.noAiStudent}</p>
         </CardContent>
       </Card>
-      {attempt.questions.map((q, index) => (
-        <Card key={q.id}>
-          <CardHeader>
-            <CardTitle>
-              <h2 className="whitespace-pre-wrap break-words">
-                {index + 1}. {q.prompt}
-              </h2>
-            </CardTitle>
-            <CardDescription>
-              {m[q.type]} · {m[q.difficulty]} · {q.marks}{" "}
-              {m.marks.toLowerCase()}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex min-w-0 flex-col gap-4">
-            {q.rubric && (
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                {m.rubric}: {q.rubric}
-              </p>
-            )}
-            <QuestionInputControl
-              question={q}
-              value={responses[q.id] ?? ""}
-              onChange={(value) =>
-                setResponses((previous) => ({ ...previous, [q.id]: value }))
-              }
-              disabled={submitted || teacher || disabled || busy}
-            />
-            {hints[q.id] && (
-              <p className="whitespace-pre-wrap text-sm">
-                {m.hintUsed}: {hints[q.id]}
-              </p>
-            )}
-            {!submitted && !teacher && q.hasHint && !hints[q.id] && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy || disabled}
-                onClick={async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    const result = await sendRequest<{ hint: string }>(
-                      `${base}/hint`,
-                      { questionId: q.id },
-                    );
-                    setHints((previous) => ({
-                      ...previous,
-                      [q.id]: result.hint,
-                    }));
-                  } catch (error) {
-                    setError(
-                      error instanceof Error
-                        ? error.message
-                        : messages.serverError,
-                    );
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                {m.hint}
-              </Button>
-            )}
-            {submitted && (
-              <>
-                <p className="text-sm font-medium">
-                  {q.needsReview
-                    ? m.pending
-                    : `${q.marksAwarded ?? 0} / ${q.marks}`}
-                </p>
-                <p className="whitespace-pre-wrap text-sm">{q.feedback}</p>
-                {q.solution ? (
-                  <details>
-                    <summary className="cursor-pointer font-medium">
-                      {m.solutions}
-                    </summary>
-                    <p className="mt-2 whitespace-pre-wrap text-sm">
-                      {q.type === "numerical"
-                        ? `${q.solution.numericAnswer} ± ${q.solution.tolerance}`
-                        : q.solution.answerIds
-                            .map(
-                              (id, i) =>
-                                `${q.type === "matching" ? `${q.matchPrompts[i]?.text}: ` : ""}${q.options.find((o) => o.id === id)?.text ?? id}`,
-                            )
-                            .join(", ")}
-                    </p>
-                    <p className="mt-2 whitespace-pre-wrap text-sm">
-                      {q.solution.explanation}
-                    </p>
-                  </details>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{m.withheld}</p>
+      {!submitted && !teacher && (
+        <p className="text-sm text-muted-foreground">{w.answersHelp}</p>
+      )}
+      <SectionTabs
+        outline
+        sequential
+        label={m.title}
+        sections={attempt.questions.map((q, index) => ({
+          id: q.id,
+          label: `${w.question} ${index + 1} · ${submitted ? w.completed : responseLabel(responses[q.id])}`,
+          content: (
+            <Card key={q.id}>
+              <CardHeader>
+                <CardTitle>
+                  <h2 className="whitespace-pre-wrap break-words">
+                    {index + 1}. {q.prompt}
+                  </h2>
+                </CardTitle>
+                <CardDescription>
+                  {m[q.type]} · {m[q.difficulty]} · {q.marks}{" "}
+                  {m.marks.toLowerCase()}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex min-w-0 flex-col gap-4">
+                {q.rubric && (
+                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                    {m.rubric}: {q.rubric}
+                  </p>
                 )}
-              </>
-            )}
-            {teacher && submitted && (
-              <TeacherReview base={base} question={q} disabled={disabled} />
-            )}
-          </CardContent>
-        </Card>
-      ))}
+                <QuestionInputControl
+                  question={q}
+                  value={responses[q.id] ?? ""}
+                  onChange={(value) =>
+                    setResponses((previous) => ({ ...previous, [q.id]: value }))
+                  }
+                  disabled={submitted || teacher || disabled || busy}
+                />
+                {hints[q.id] && (
+                  <p className="whitespace-pre-wrap text-sm">
+                    {m.hintUsed}: {hints[q.id]}
+                  </p>
+                )}
+                {!submitted && !teacher && q.hasHint && !hints[q.id] && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy || disabled}
+                    onClick={async () => {
+                      setBusy(true);
+                      setError("");
+                      try {
+                        const result = await sendRequest<{ hint: string }>(
+                          `${base}/hint`,
+                          { questionId: q.id },
+                        );
+                        setHints((previous) => ({
+                          ...previous,
+                          [q.id]: result.hint,
+                        }));
+                      } catch (error) {
+                        setError(
+                          error instanceof Error
+                            ? error.message
+                            : messages.serverError,
+                        );
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    {m.hint}
+                  </Button>
+                )}
+                {submitted && (
+                  <>
+                    <p className="text-sm font-medium">
+                      {q.needsReview
+                        ? m.pending
+                        : `${q.marksAwarded ?? 0} / ${q.marks}`}
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm">{q.feedback}</p>
+                    {q.solution ? (
+                      <details>
+                        <summary className="cursor-pointer font-medium">
+                          {m.solutions}
+                        </summary>
+                        <p className="mt-2 whitespace-pre-wrap text-sm">
+                          {q.type === "numerical"
+                            ? `${q.solution.numericAnswer} ± ${q.solution.tolerance}`
+                            : q.solution.answerIds
+                                .map(
+                                  (id, i) =>
+                                    `${q.type === "matching" ? `${q.matchPrompts[i]?.text}: ` : ""}${q.options.find((o) => o.id === id)?.text ?? id}`,
+                                )
+                                .join(", ")}
+                        </p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm">
+                          {q.solution.explanation}
+                        </p>
+                      </details>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {m.withheld}
+                      </p>
+                    )}
+                  </>
+                )}
+                {teacher && submitted && (
+                  <TeacherReview base={base} question={q} disabled={disabled} />
+                )}
+              </CardContent>
+            </Card>
+          ),
+        }))}
+      />
       <FormError message={error} />
       {notice && <p role="status">{notice}</p>}
       {!submitted && !teacher && (
         <Card>
-          <CardFooter className="flex flex-wrap gap-3">
+          <CardFooter className="workspace-save-bar">
             <Button
               type="button"
               disabled={busy || disabled}

@@ -25,6 +25,9 @@ import {
   type LessonActivityContext,
 } from "@/features/analytics/use-learning-events";
 import { FormError } from "@/components/form-error";
+import { Progress } from "@/components/ui/progress";
+import { BookOpenText, ArrowLeft, ArrowRight } from "lucide-react";
+import { workspaceMessages as w } from "@/lib/workspace-messages";
 
 function Diagram({
   block,
@@ -272,44 +275,71 @@ export function LessonPlayer({
       </Card>
     );
   return (
-    <Card>
-      <CardHeader>
-        <CardDescription>
-          {m.blocks}: {index + 1} / {lesson.blocks.length} · {m[block.type]}
-        </CardDescription>
-        <CardTitle>
-          <h2 ref={heading} tabIndex={-1} className="break-words">
-            {block.title}
-          </h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex min-w-0 flex-col gap-5">
-        <progress
-          aria-label={m.blocks}
-          max={lesson.blocks.length}
+    <div className="lesson-study-layout">
+      <Card className="lesson-study-content">
+        <CardHeader>
+          <CardDescription>
+            {m.blocks}: {index + 1} / {lesson.blocks.length} · {m[block.type]}
+          </CardDescription>
+          <CardTitle>
+            <h2 ref={heading} tabIndex={-1} className="break-words">
+              {block.title}
+            </h2>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="lesson-reading-content flex min-w-0 flex-col gap-5">
+          <Progress
+            aria-label={m.blocks}
+            max={lesson.blocks.length}
+            value={index + 1}
+          />
+          <BlockContent
+            key={block.id}
+            block={block}
+            onAnswer={events.checkpoint}
+          />
+          <FormError message={events.error} />
+        </CardContent>
+        <CardFooter className="flex flex-wrap justify-between gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={index === 0}
+            onClick={() => go(index - 1)}
+          >
+            <ArrowLeft data-icon="inline-start" />
+            {m.previous}
+          </Button>
+          <Button type="button" onClick={() => go(index + 1)}>
+            {index === lesson.blocks.length - 1 ? m.finish : m.next}
+            <ArrowRight data-icon="inline-end" />
+          </Button>
+        </CardFooter>
+      </Card>
+      <aside className="lesson-study-aside" aria-label={w.lessonOutline}>
+        <p className="learning-section-kicker">{w.lessonOutline}</p>
+        <Progress
           value={index + 1}
-          className="w-full"
+          max={lesson.blocks.length}
+          aria-label={m.blocks}
         />
-        <BlockContent
-          key={block.id}
-          block={block}
-          onAnswer={events.checkpoint}
-        />
-        <FormError message={events.error} />
-      </CardContent>
-      <CardFooter className="flex flex-wrap justify-between gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={index === 0}
-          onClick={() => go(index - 1)}
-        >
-          {m.previous}
-        </Button>
-        <Button type="button" onClick={() => go(index + 1)}>
-          {index === lesson.blocks.length - 1 ? m.finish : m.next}
-        </Button>
-      </CardFooter>
-    </Card>
+        <nav className="lesson-outline" aria-label={w.lessonOutline}>
+          {lesson.blocks.map((item, position) => (
+            <Button
+              key={item.id}
+              variant={position === index ? "secondary" : "ghost"}
+              aria-current={position === index ? "step" : undefined}
+              onClick={() => go(position)}
+            >
+              <BookOpenText data-icon="inline-start" />
+              <span>
+                {position + 1}. {item.title}
+              </span>
+            </Button>
+          ))}
+        </nav>
+        <p>{w.readingHelp}</p>
+      </aside>
+    </div>
   );
 }
